@@ -1,13 +1,14 @@
 import { PaqueteModel } from "../models/paquete.model.js";
 import { HistorialEstadosModel } from "../models/historial_estados.model.js";
+import { db } from "../config/db.js";
 
 export const PaqueteService = {
   getAll: () => {
     return PaqueteModel.getAll();
   },
 
-  getAllPaginated: (page, limit) => {
-    return PaqueteModel.getAllPaginated(page, limit);
+  getAllPaginated: (page, limit, id_grupo) => {
+    return PaqueteModel.getAllPaginated(page, limit, id_grupo);
   },
 
 getById: (id) => {
@@ -41,7 +42,37 @@ getById: (id) => {
         Hora_registro: horaRegistro
       };
 
-      return await PaqueteModel.create(paqueteData);
+      const id_Paquete = await PaqueteModel.create(paqueteData);
+
+      // Si tiene estado inicial, registrar todos los estados previos en el historial
+      if (data.id_estado && data.id_estado > 0) {
+        // Obtener todos los estados activos ordenados por su campo 'orden'
+        const estadosActivos = await db.query(
+          'SELECT id_estado, orden FROM estados WHERE estado = "activo" ORDER BY orden ASC'
+        );
+        const estados = estadosActivos[0];
+        
+        // Encontrar el orden del estado actual
+        const estadoActual = estados.find(e => e.id_estado == data.id_estado);
+        
+        if (estadoActual) {
+          // Registrar todos los estados hasta el orden del estado actual
+          for (const estado of estados) {
+            if (estado.orden <= estadoActual.orden) {
+              await HistorialEstadosModel.create({
+                id_Paquete: id_Paquete,
+                id_estado: estado.id_estado,
+                observaciones: estado.id_estado == data.id_estado ? 'Estado inicial' : 'Estado registrado automáticamente',
+                fecha_cambio: fechaRegistro,
+                hora_cambio: horaRegistro,
+                usuario: data.usuario || null
+              });
+            }
+          }
+        }
+      }
+
+      return id_Paquete;
 
     } catch (error) {
       // Si ya es un error personalizado, lanzarlo tal cual
@@ -147,6 +178,85 @@ getById: (id) => {
     };
   }
 },
+
+  // Actualizar estado de múltiples paquetes
+  updateEstadoMultiple: async (ids, data) => {
+    try {
+      // Validación básica
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw { status: 400, message: "Debe proporcionar un array de IDs" };
+      }
+
+      if (!data.id_estado || !data.fecha_cambio || !data.hora_cambio) {
+        throw {
+          status: 400,
+          message: "id_estado, fecha_cambio y hora_cambio son obligatorios"
+        };
+      }
+
+      const resultados = {
+        actualizados: 0,
+        omitidos: 0,
+        errores: [],
+        detalles: []
+      };
+
+      // Procesar cada paquete individualmente para validar estado duplicado
+      for (const id of ids) {
+        try {
+          // Obtener paquete actual
+          const paquete = await PaqueteModel.getById(id);
+          
+          if (!paquete) {
+            resultados.errores.push(`Paquete ${id}: no encontrado`);
+            continue;
+          }
+
+          // Verificar si ya tiene ese estado
+          if (paquete.id_estado == data.id_estado) {
+            resultados.omitidos++;
+            resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): ya tiene ese estado`);
+            continue;
+          }
+
+          // Actualizar estado
+          const result = await PaqueteModel.updateEstado(id, data.id_estado);
+
+          if (result.affectedRows > 0) {
+            // Registrar en historial
+            await HistorialEstadosModel.create({
+              id_Paquete: id,
+              id_estado: data.id_estado,
+              observaciones: data.observaciones || null,
+              fecha_cambio: data.fecha_cambio,
+              hora_cambio: data.hora_cambio,
+              usuario: data.usuario || null
+            });
+
+            resultados.actualizados++;
+            resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): actualizado`);
+          }
+
+        } catch (error) {
+          resultados.errores.push(`Paquete ${id}: ${error.message}`);
+        }
+      }
+
+      return {
+        ok: true,
+        message: `Proceso completado: ${resultados.actualizados} actualizados, ${resultados.omitidos} omitidos`,
+        ...resultados
+      };
+
+    } catch (error) {
+      throw error.status ? error : {
+        status: 500,
+        message: "Error interno",
+        detalle: error.message
+      };
+    }
+  },
+
 getByGuiaFull: async (guia) => {
   const rows = await PaqueteModel.getByGuiaFull(guia);
 
@@ -184,6 +294,65 @@ getByGuiaFull: async (guia) => {
     return PaqueteModel.deactivate(id);
   },
 
+  // Desactivar múltiples paquetes
+  deactivateMultiple: async (ids) => {
+    try {
+      // Validación básica
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw { status: 400, message: "Debe proporcionar un array de IDs" };
+      }
+
+      const resultados = {
+        desactivados: 0,
+        errores: [],
+        detalles: []
+      };
+
+      // Procesar cada paquete individualmente
+      for (const id of ids) {
+        try {
+          // Obtener paquete actual
+          const paquete = await PaqueteModel.getById(id);
+          
+          if (!paquete) {
+            resultados.errores.push(`Paquete ${id}: no encontrado`);
+            continue;
+          }
+
+          // Verificar si ya está inactivo
+          if (paquete.Activo === false || paquete.Activo === 0) {
+            resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): ya está inactivo`);
+            continue;
+          }
+
+          // Desactivar
+          const result = await PaqueteModel.deactivate(id);
+
+          if (result.affectedRows > 0) {
+            resultados.desactivados++;
+            resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): desactivado`);
+          }
+
+        } catch (error) {
+          resultados.errores.push(`Paquete ${id}: ${error.message}`);
+        }
+      }
+
+      return {
+        ok: true,
+        message: `Proceso completado: ${resultados.desactivados} paquetes desactivados`,
+        ...resultados
+      };
+
+    } catch (error) {
+      throw error.status ? error : {
+        status: 500,
+        message: "Error interno",
+        detalle: error.message
+      };
+    }
+  },
+
   // Método para importación: actualiza si existe, crea si no existe
   upsert: async (data) => {
     try {
@@ -195,19 +364,84 @@ getByGuiaFull: async (guia) => {
       const paqueteData = {
         ...data,
         Fecha_registro: fechaRegistro,
-        Hora_registro: horaRegistro
+        Hora_registro: horaRegistro,
+        id_grupo: data.id_grupo || null, // Incluir id_grupo si viene en data
+        id_estado: data.id_estado || null, // Incluir id_estado si viene en data
+        estado: 'activo' // Reactivar si estaba inactivo
       };
 
-      // Buscar si ya existe un paquete activo con esa guía
-      const paqueteExistente = await PaqueteModel.getByGuiaActivo(data.Guia);
+      // Buscar si ya existe un paquete con esa guía (activo o inactivo)
+      const paqueteExistente = await PaqueteModel.getByGuia(data.Guia);
       
       if (paqueteExistente) {
-        // Si existe, actualizar
+        // Si existe (activo o inactivo), actualizar y reactivar
         await PaqueteModel.update(paqueteExistente.id_Paquete, paqueteData);
+        
+        // Si tiene estado inicial, actualizar el historial también
+        if (data.id_estado && data.id_estado > 0) {
+          // Obtener todos los estados activos ordenados por su campo 'orden'
+          const estadosActivos = await db.query(
+            'SELECT id_estado, orden FROM estados WHERE estado = "activo" ORDER BY orden ASC'
+          );
+          const estados = estadosActivos[0];
+          
+          // Encontrar el orden del estado actual
+          const estadoActual = estados.find(e => e.id_estado == data.id_estado);
+          
+          if (estadoActual) {
+            // Obtener estados ya registrados para este paquete
+            const historialExistente = await HistorialEstadosModel.getByPaqueteAll(paqueteExistente.id_Paquete);
+            const estadosRegistrados = historialExistente.map(h => h.id_estado);
+            
+            // Registrar estados que faltan hasta el orden del estado actual
+            for (const estado of estados) {
+              if (estado.orden <= estadoActual.orden && !estadosRegistrados.includes(estado.id_estado)) {
+                await HistorialEstadosModel.create({
+                  id_Paquete: paqueteExistente.id_Paquete,
+                  id_estado: estado.id_estado,
+                  observaciones: estado.id_estado == data.id_estado ? 'Estado inicial al reimportar' : 'Estado registrado automáticamente',
+                  fecha_cambio: fechaRegistro,
+                  hora_cambio: horaRegistro,
+                  usuario: data.usuario || null
+                });
+              }
+            }
+          }
+        }
+        
         return { action: 'updated', id: paqueteExistente.id_Paquete };
       } else {
         // Si no existe, crear
         const id = await PaqueteModel.create(paqueteData);
+        
+        // Si tiene estado inicial, registrar todos los estados previos en el historial
+        if (data.id_estado && data.id_estado > 0) {
+          // Obtener todos los estados activos ordenados por su campo 'orden'
+          const estadosActivos = await db.query(
+            'SELECT id_estado, orden FROM estados WHERE estado = "activo" ORDER BY orden ASC'
+          );
+          const estados = estadosActivos[0];
+          
+          // Encontrar el orden del estado actual
+          const estadoActual = estados.find(e => e.id_estado == data.id_estado);
+          
+          if (estadoActual) {
+            // Registrar todos los estados hasta el orden del estado actual
+            for (const estado of estados) {
+              if (estado.orden <= estadoActual.orden) {
+                await HistorialEstadosModel.create({
+                  id_Paquete: id,
+                  id_estado: estado.id_estado,
+                  observaciones: estado.id_estado == data.id_estado ? 'Estado inicial' : 'Estado registrado automáticamente',
+                  fecha_cambio: fechaRegistro,
+                  hora_cambio: horaRegistro,
+                  usuario: data.usuario || null
+                });
+              }
+            }
+          }
+        }
+        
         return { action: 'created', id };
       }
 

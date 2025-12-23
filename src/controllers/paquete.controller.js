@@ -11,8 +11,9 @@ export const PaqueteController = {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
+            const id_grupo = req.query.id_grupo ? parseInt(req.query.id_grupo) : null;
 
-            const result = await PaqueteService.getAllPaginated(page, limit);
+            const result = await PaqueteService.getAllPaginated(page, limit, id_grupo);
             res.json(result);
         } catch (error) {
             res.status(500).json({
@@ -114,6 +115,40 @@ export const PaqueteController = {
       });
     }
   },
+
+  // Actualizar estado de múltiples paquetes
+  updateEstadoMultiple: async (req, res) => {
+    try {
+      const { ids, ...data } = req.body;
+
+      // Validación básica
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          message: "Debe proporcionar un array de IDs en el campo 'ids'"
+        });
+      }
+
+      if (!data.id_estado || !data.fecha_cambio || !data.hora_cambio) {
+        return res.status(400).json({
+          ok: false,
+          message: "id_estado, fecha_cambio y hora_cambio son obligatorios"
+        });
+      }
+
+      const respuesta = await PaqueteService.updateEstadoMultiple(ids, data);
+
+      res.json(respuesta);
+
+    } catch (error) {
+      res.status(error.status || 500).json({
+        ok: false,
+        message: error.message,
+        detalle: error.detalle || null
+      });
+    }
+  },
+
    getByGuiaFull: async (req, res) => {
     try {
       const { guia } = req.params;
@@ -130,6 +165,31 @@ export const PaqueteController = {
     await PaqueteService.deactivate(req.params.id);
     res.json({ message: "Paquete marcado como inactivo" });
   },
+
+  deactivateMultiple: async (req, res) => {
+    try {
+      const { ids } = req.body;
+
+      // Validación básica
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          message: "Debe proporcionar un array de IDs en el campo 'ids'"
+        });
+      }
+
+      const respuesta = await PaqueteService.deactivateMultiple(ids);
+
+      res.json(respuesta);
+
+    } catch (error) {
+      res.status(error.status || 500).json({
+        ok: false,
+        message: error.message,
+        detalle: error.detalle || null
+      });
+    }
+  },
 };
 
 //importar excel
@@ -138,6 +198,10 @@ export const importarPaquetes = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "Debes subir un archivo Excel." });
     }
+
+    // Extraer id_grupo e id_estado del body (opcionales)
+    const id_grupo = req.body.id_grupo ? parseInt(req.body.id_grupo) : null;
+    const id_estado = req.body.id_estado ? parseInt(req.body.id_estado) : null;
 
     const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
@@ -173,7 +237,9 @@ export const importarPaquetes = async (req, res) => {
           Remitente: row["Remitente"],
           Peso_LB: row["PESO LB"],
           Courier: row["Courier"],
-          guia_tramaco: null
+          guia_tramaco: null,
+          id_grupo: id_grupo, // Agregar el id_grupo a cada paquete
+          id_estado: id_estado // Agregar el id_estado a cada paquete
         };
 
         const resultado = await PaqueteService.upsert(paquete);

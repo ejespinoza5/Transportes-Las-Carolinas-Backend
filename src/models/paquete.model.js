@@ -5,10 +5,12 @@ export const PaqueteModel = {
   getAll: async () => {
     const [rows] = await db.query(
       `SELECT p.id_Paquete, p.Servicio, p.Guia, p.Fecha_Salida, p.Remitente, p.Peso_LB, p.Courier,
-      p.id_estado, e.nombre_estado, p.guia_tramaco, p.Fecha_registro, p.Hora_registro, p.estado 
+      p.id_estado, e.nombre_estado, p.guia_tramaco,g.id_grupo, g.nombre as nombre_grupo, p.Fecha_registro, p.Hora_registro, p.estado 
       FROM paquete as p
       LEFT JOIN estados e 
       ON p.id_estado=e.id_estado
+      LEFT JOIN grupos g
+      ON p.id_grupo=g.id_grupo
       WHERE p.estado='activo'
       ORDER BY p.id_Paquete DESC;`
     );
@@ -16,27 +18,43 @@ export const PaqueteModel = {
   },
 
   // Obtener paquetes con paginación
-  getAllPaginated: async (page = 1, limit = 10) => {
+  getAllPaginated: async (page = 1, limit = 10, id_grupo = null) => {
     const offset = (page - 1) * limit;
     
+    // Construir WHERE dinámicamente
+    let whereClause = "WHERE p.estado='activo'";
+    const countParams = [];
+    const selectParams = [];
+    
+    if (id_grupo !== null && id_grupo !== undefined) {
+      whereClause += " AND p.id_grupo = ?";
+      countParams.push(id_grupo);
+      selectParams.push(id_grupo);
+    }
+    
     // Obtener total de registros
-    const [countResult] = await db.query(
-      `SELECT COUNT(*) as total FROM paquete WHERE estado='activo'`
-    );
+    const countQuery = `SELECT COUNT(*) as total FROM paquete p ${whereClause}`;
+    
+    const [countResult] = await db.query(countQuery, countParams);
     const total = countResult[0].total;
 
+    // Agregar LIMIT y OFFSET a los parámetros
+    selectParams.push(limit, offset);
+
     // Obtener registros paginados
-    const [rows] = await db.query(
-      `SELECT p.id_Paquete, p.Servicio, p.Guia, p.Fecha_Salida, p.Remitente, p.Peso_LB, p.Courier,
-      p.id_estado, e.nombre_estado, p.guia_tramaco, p.Fecha_registro, p.Hora_registro, p.estado 
+    const selectQuery = `SELECT p.id_Paquete, p.Servicio, p.Guia, p.Fecha_Salida, p.Remitente, p.Peso_LB, p.Courier,
+      p.id_estado, e.nombre_estado, p.guia_tramaco, g.id_grupo, g.nombre as nombre_grupo, p.Fecha_registro, p.Hora_registro, p.estado 
       FROM paquete as p
       LEFT JOIN estados e 
       ON p.id_estado=e.id_estado
-      WHERE p.estado='activo'
+      LEFT JOIN grupos g
+      ON p.id_grupo=g.id_grupo
+      ${whereClause}
       ORDER BY p.id_Paquete DESC
-      LIMIT ? OFFSET ?;`,
-      [limit, offset]
-    );
+      LIMIT ? OFFSET ?`;
+    
+    
+    const [rows] = await db.query(selectQuery, selectParams);
 
     return {
       data: rows,
@@ -53,9 +71,11 @@ export const PaqueteModel = {
   getById: async (id) => {
     const [rows] = await db.query(
       `SELECT p.id_Paquete, p.Servicio,p.Guia,p.Fecha_Salida,p.Remitente,p.Peso_LB,p.Courier, p.id_estado,
-      e.nombre_estado, p.guia_tramaco,p.Fecha_registro,p.Hora_registro,p.estado FROM paquete as p
+      e.nombre_estado, p.guia_tramaco,g.id_grupo, g.nombre as nombre_grupo,p.Fecha_registro,p.Hora_registro,p.estado FROM paquete as p
       LEFT JOIN estados e 
       ON p.id_estado=e.id_estado
+      LEFT JOIN grupos g
+      ON p.id_grupo=g.id_grupo
       WHERE p.id_Paquete = ? AND p.estado='activo';`,
       [id]
     );
@@ -66,9 +86,10 @@ export const PaqueteModel = {
     const [rows] = await db.query(
       `SELECT p.id_Paquete, p.Servicio, p.Guia, p.Fecha_Salida, p.Remitente,
        p.Peso_LB, p.Courier, p.id_estado, e.nombre_estado,
-       p.guia_tramaco, p.Fecha_registro, p.Hora_registro, p.estado
+       p.guia_tramaco,g.id_grupo, g.nombre as nombre_grupo, p.Fecha_registro, p.Hora_registro, p.estado
 FROM paquete p
 LEFT JOIN estados e ON p.id_estado = e.id_estado
+LEFT JOIN grupos g ON p.id_grupo = g.id_grupo
 WHERE p.Guia = ?`,
       [guia]
     );
@@ -89,9 +110,9 @@ WHERE p.Guia = ?`,
     try {
       const sql = `
       INSERT INTO paquete 
-      (Servicio, Guia, Fecha_Salida, Remitente, Peso_LB, Courier, id_estado, guia_tramaco,
+      (Servicio, Guia, Fecha_Salida, Remitente, Peso_LB, Courier, id_estado, guia_tramaco,id_grupo,
        Fecha_registro, Hora_registro)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
       const params = [
@@ -103,6 +124,7 @@ WHERE p.Guia = ?`,
         data.Courier,
         data.id_estado,
         data.guia_tramaco,
+        data.id_grupo,
         data.Fecha_registro,
         data.Hora_registro,
       ];
@@ -153,6 +175,14 @@ WHERE p.Guia = ?`,
       campos.push('guia_tramaco = ?');
       valores.push(data.guia_tramaco);
     }
+    if (data.id_grupo !== undefined) {
+      campos.push('id_grupo = ?');
+      valores.push(data.id_grupo);
+    }
+    if (data.estado !== undefined) {
+      campos.push('estado = ?');
+      valores.push(data.estado);
+    }
 
     // Si no hay campos para actualizar, retornar sin hacer nada
     if (campos.length === 0) {
@@ -162,7 +192,7 @@ WHERE p.Guia = ?`,
     // Agregar el ID al final
     valores.push(id);
 
-    const sql = `UPDATE paquete SET ${campos.join(', ')} WHERE id_Paquete = ? AND estado='activo'`;
+    const sql = `UPDATE paquete SET ${campos.join(', ')} WHERE id_Paquete = ?`;
 
     const [result] = await db.query(sql, valores);
     return result;
@@ -186,6 +216,20 @@ WHERE p.Guia = ?`,
     const [result] = await db.query(sql, [id_estado, id]);
     return result;
   },
+
+  // Actualizar estado de múltiples paquetes
+  updateEstadoMultiple: async (ids, id_estado) => {
+    const placeholders = ids.map(() => '?').join(',');
+    const sql = `
+      UPDATE paquete
+      SET id_estado = ?
+      WHERE id_Paquete IN (${placeholders}) AND estado = 'activo'
+    `;
+    const params = [id_estado, ...ids];
+    const [result] = await db.query(sql, params);
+    return result;
+  },
+
   getByGuiaFull: async (guia) => {
     const sql = `
       SELECT 

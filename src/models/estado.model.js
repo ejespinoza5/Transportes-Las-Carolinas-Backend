@@ -44,28 +44,37 @@ export const EstadoModel = {
     throw error;
   }
 },
-    //actualizar estado
+    //actualizar estado (dinámico - solo campos enviados)
     update: async (id, data) => {
         try {
-            const sql = `
-      UPDATE estados SET 
-      nombre_estado=?,
-      color=?,
-      orden=?
-      WHERE id_estado = ?
-    `;
+            const campos = [];
+            const valores = [];
 
-        const params = [
-            data.nombre_estado,
-            data.color,
-            data.orden,
-            id
-        ];
-        const [result] = await db.query(sql, params);
-        return result.affectedRows;
-    } catch (error) {
-        throw error;
-    }
+            if (data.nombre_estado !== undefined) {
+                campos.push('nombre_estado = ?');
+                valores.push(data.nombre_estado);
+            }
+            if (data.color !== undefined) {
+                campos.push('color = ?');
+                valores.push(data.color);
+            }
+            if (data.orden !== undefined) {
+                campos.push('orden = ?');
+                valores.push(data.orden);
+            }
+
+            if (campos.length === 0) {
+                throw new Error('No hay campos para actualizar');
+            }
+
+            valores.push(id);
+
+            const sql = `UPDATE estados SET ${campos.join(', ')} WHERE id_estado = ? AND estado='activo'`;
+            const [result] = await db.query(sql, valores);
+            return result.affectedRows;
+        } catch (error) {
+            throw error;
+        }
     },
 
     //eliminar estado (opcional)
