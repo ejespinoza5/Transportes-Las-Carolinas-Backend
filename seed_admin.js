@@ -4,64 +4,58 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Credenciales del administrador (puedes cambiarlas aquí o usar variables de entorno)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@sistema.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin123456';
 
 async function crearAdministrador() {
   try {
-    console.log('🔍 Verificando si ya existe un administrador...');
+    // Crear o verificar roles
+    await db.execute(`
+      INSERT IGNORE INTO roles (id_rol, nombre) 
+      VALUES 
+        (1, 'administrador'),
+        (2, 'cliente')
+    `);
+    console.log('✅ Roles verificados');
 
-    // Verificar si ya existe un usuario con rol de administrador (id_rol = 1)
+    // Verificar si ya existe un administrador
     const [admins] = await db.execute(
       'SELECT id_usuario, email FROM usuarios WHERE id_rol = 1 LIMIT 1'
     );
 
     if (admins.length > 0) {
-      console.log('⚠️  Ya existe un administrador en el sistema:');
-      console.log('   Email:', admins[0].email);
-      console.log('   ID:', admins[0].id_usuario);
-      console.log('\n✅ No es necesario crear otro administrador.');
+      console.log('⚠️  Administrador ya existe:', admins[0].email);
       process.exit(0);
     }
 
-    // Verificar si el email ya existe (con otro rol)
+    // Verificar si el email ya existe
     const [usuarios] = await db.execute(
       'SELECT id_usuario FROM usuarios WHERE email = ?',
       [ADMIN_EMAIL]
     );
 
     if (usuarios.length > 0) {
-      console.log('❌ Error: El email', ADMIN_EMAIL, 'ya está registrado con otro rol.');
-      console.log('   Por favor, cambia el ADMIN_EMAIL en el archivo .env o en seed_admin.js');
+      console.log('❌ Email ya registrado:', ADMIN_EMAIL);
       process.exit(1);
     }
-
-    console.log('📝 Creando nuevo administrador...');
 
     // Hashear la contraseña
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
     // Insertar el administrador
-    const query = `
-      INSERT INTO usuarios (email, password, id_rol, estado) 
-      VALUES (?, ?, 1, 'activo')
-    `;
-    
-    const [result] = await db.execute(query, [ADMIN_EMAIL, passwordHash]);
+    await db.execute(
+      'INSERT INTO usuarios (email, password, id_rol, estado) VALUES (?, ?, 1, "activo")',
+      [ADMIN_EMAIL, passwordHash]
+    );
 
-    console.log('Email:    ', ADMIN_EMAIL);
-    console.log('Password: ', ADMIN_PASSWORD);
-    console.log('ID:       ', result.insertId);
-    console.log('Rol:      ', 'Administrador (1)');
+    console.log('✅ Administrador creado:', ADMIN_EMAIL);
     
     process.exit(0);
   } catch (error) {
-    console.error('\n Error al crear administrador:', error.message);
+    console.error('❌ Error:', error.message);
     process.exit(1);
   }
 }
 
-// Ejecutar la función
 crearAdministrador();

@@ -4,8 +4,12 @@ export const casilleroClienteModel = {
   // Obtener casillero por id_usuario
   async obtenerPorUsuario(id_usuario) {
     const query = `
-      SELECT * FROM casilleros_clientes
-      WHERE id_usuario = ?
+      SELECT 
+        c.*,
+        u.email
+      FROM casilleros_clientes c
+      INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
+      WHERE c.id_usuario = ?
     `;
     const [rows] = await db.execute(query, [id_usuario]);
     return rows[0] || null;
@@ -167,6 +171,44 @@ export const casilleroClienteModel = {
   async actualizarEstadoUsuario(id_usuario, estado) {
     const query = 'UPDATE usuarios SET estado = ? WHERE id_usuario = ?';
     const [result] = await db.execute(query, [estado, id_usuario]);
+    return result.affectedRows > 0;
+  },
+
+  // Verificar si email ya existe (excluyendo un id_usuario específico)
+  async verificarEmailExistente(email, excluirIdUsuario = null) {
+    let query = 'SELECT id_usuario FROM usuarios WHERE email = ?';
+    const params = [email];
+
+    if (excluirIdUsuario) {
+      query += ' AND id_usuario != ?';
+      params.push(excluirIdUsuario);
+    }
+
+    const [rows] = await db.execute(query, params);
+    return rows.length > 0;
+  },
+
+  // Actualizar email del usuario
+  async actualizarEmailUsuario(id_usuario, nuevoEmail) {
+    const query = 'UPDATE usuarios SET email = ? WHERE id_usuario = ?';
+    const [result] = await db.execute(query, [nuevoEmail, id_usuario]);
+    return result.affectedRows > 0;
+  },
+
+  // Dar de baja (inactivar casillero y usuario) - para que el cliente se dé de baja
+  async darDeBaja(id_usuario) {
+    // Inactivar usuario
+    await db.execute(
+      'UPDATE usuarios SET estado = "inactivo" WHERE id_usuario = ?',
+      [id_usuario]
+    );
+
+    // Inactivar casillero
+    const [result] = await db.execute(
+      'UPDATE casilleros_clientes SET estado = "inactivo" WHERE id_usuario = ?',
+      [id_usuario]
+    );
+
     return result.affectedRows > 0;
   }
 };

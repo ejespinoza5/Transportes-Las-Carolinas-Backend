@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6; 
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 20px;
+    }
+    .email-wrapper { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(10, 42, 102, 0.15);
+    }
+    .header { 
+      background: linear-gradient(135deg, #0A2A66 0%, #164d8a 100%);
+      padding: 40px 30px;
+      text-align: center;
+      position: relative;
+    }
+    .logo-container {
+      margin-bottom: 20px;
+    }
+    .logo {
+      max-width: 180px;
+      height: auto;
+      filter: brightness(0) invert(1);
+    }
+    .header-title {
+      color: #ffffff;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 0.5px;
+    }
+    .header-subtitle {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 16px;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+    .welcome-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    .content { 
+      padding: 40px 30px;
+      background: #ffffff;
+    }
+    .greeting {
+      font-size: 22px;
+      color: #0A2A66;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .message {
+      color: #555;
+      font-size: 15px;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+    .highlight {
+      color: #0A2A66;
+      font-weight: 600;
+    }
+    .casillero-card {
+      background: linear-gradient(135deg, #0A2A66 0%, #164d8a 100%);
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px 0;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(10, 42, 102, 0.2);
+    }
+    .casillero-label {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+    }
+    .casillero-numero {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: #ffffff;
+      font-family: 'Courier New', monospace;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      margin: 10px 0;
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+    }
+    .casillero-info {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 14px;
+      margin-top: 15px;
+      line-height: 1.8;
+    }
+    .info-section {
+      background: #f8f9fc;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 25px 0;
+      border-left: 4px solid #0A2A66;
+    }
+    .info-title {
+      color: #0A2A66;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+    .info-icon {
+      font-size: 20px;
+      margin-right: 10px;
+    }
+    .info-list {
+      list-style: none;
+      padding: 0;
+    }
+    .info-list li {
+      color: #555;
+      font-size: 14px;
+      padding: 8px 0;
+      padding-left: 25px;
+      position: relative;
+      line-height: 1.6;
+    }
+    .info-list li:before {
+      content: "✓";
+      color: #0A2A66;
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+      font-size: 16px;
+    }
+    .datos-cliente {
+      background: #ffffff;
+      border: 2px solid #e9ecf5;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 25px 0;
+    }
+    .dato-row {
+      display: flex;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .dato-row:last-child {
+      border-bottom: none;
+    }
+    .dato-label {
+      color: #0A2A66;
+      font-weight: 600;
+      font-size: 14px;
+      min-width: 140px;
+    }
+    .dato-value {
+      color: #555;
+      font-size: 14px;
+    }
+    .cta-section {
+      background: linear-gradient(135deg, #f8f9fc 0%, #e9ecf5 100%);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 30px 0;
+      text-align: center;
+    }
+    .cta-text {
+      color: #555;
+      font-size: 15px;
+      margin-bottom: 15px;
+    }
+    .signature {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #e9ecf5;
+      text-align: center;
+    }
+    .signature-text {
+      color: #555;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+    .company-name {
+      color: #0A2A66;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .footer { 
+      background: #f8f9fc;
+      text-align: center; 
+      padding: 25px 30px;
+      border-top: 1px solid #e9ecf5;
+    }
+    .footer-text {
+      color: #999;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .footer-brand {
+      color: #0A2A66;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    @media only screen and (max-width: 600px) {
+      .email-wrapper { border-radius: 0; margin: 0; }
+      .header, .content, .footer { padding: 25px 20px; }
+      .casillero-numero { font-size: 36px; letter-spacing: 3px; }
+      .logo { max-width: 150px; }
+      .greeting { font-size: 20px; }
+      .dato-row { flex-direction: column; }
+      .dato-label { margin-bottom: 5px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <div class="logo-container">
+        <img src="cid:logo" alt="Las Carolinas" class="logo">
+      </div>
+      <h1 class="header-title">¡Bienvenido!</h1>
+      <p class="header-subtitle">Tu cuenta ha sido creada exitosamente</p>
+      <div class="welcome-badge">✨ Miembro desde {{YEAR}}</div>
+    </div>
+    
+    <div class="content">
+      <p class="greeting">¡Hola, {{NOMBRE_COMPLETO}}! 🎉</p>
+      
+      <p class="message">
+        Gracias por <span class="highlight">confiar en Transportes Las Carolinas</span>. 
+        Nos complace darte la bienvenida a nuestra familia de clientes. Tu cuenta ha sido 
+        creada exitosamente y ya puedes comenzar a disfrutar de nuestros servicios.
+      </p>
+
+      <div class="casillero-card">
+        <div class="casillero-label">Tu Casillero Asignado</div>
+        <div class="casillero-numero">{{COD_CASILLERO}}</div>
+        <div class="casillero-info">
+          Este es tu número de casillero único.<br>
+          Úsalo para recibir tus paquetes.
+        </div>
+      </div>
+
+      <div class="datos-cliente">
+        <div class="dato-row">
+          <div class="dato-label">👤 Nombre:</div>
+          <div class="dato-value">{{NOMBRE_COMPLETO}}</div>
+        </div>
+        <div class="dato-row">
+          <div class="dato-label">📦 Casillero:</div>
+          <div class="dato-value">{{COD_CASILLERO}}</div>
+        </div>
+        <div class="dato-row">
+          <div class="dato-label">📧 Email:</div>
+          <div class="dato-value">{{EMAIL}}</div>
+        </div>
+        <div class="dato-row">
+          <div class="dato-label">🚚 Tipo de Entrega:</div>
+          <div class="dato-value">{{TIPO_ENTREGA}}</div>
+        </div>
+        <div class="dato-row">
+          <div class="dato-label">📍 Ciudad:</div>
+          <div class="dato-value">{{CIUDAD}}</div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-title">
+          <span class="info-icon">📋</span>
+          ¿Cómo funciona tu casillero?
+        </div>
+        <ul class="info-list">
+          <li>Tu casillero <strong>{{COD_CASILLERO}}</strong> es tu identificador único en nuestro sistema</li>
+          <li>Podrás rastrear el estado de tus envíos en tiempo real desde tu cuenta</li>
+          <li>Tus datos están protegidos y solo tú puedes acceder a tu información</li>
+        </ul>
+      </div>
+
+      <div class="info-section">
+        <div class="info-title">
+          <span class="info-icon">🚀</span>
+          Próximos pasos
+        </div>
+        <ul class="info-list">
+          <li>Inicia sesión en el sistema con tu correo electrónico</li>
+          <li>Completa tu perfil si necesitas actualizar algún dato</li>
+        </ul>
+      </div>
+
+      <div class="cta-section">
+        <p class="cta-text">
+          <strong>💡 Consejo:</strong> Guarda tu número de casillero <strong>{{COD_CASILLERO}}</strong> 
+          en un lugar seguro. Lo necesitarás para todas tus operaciones.
+        </p>
+      </div>
+
+      <div class="signature">
+        <p class="signature-text">
+          Estamos aquí para servirte.<br>
+          Si tienes alguna pregunta, no dudes en contactarnos.<br><br>
+          <span class="company-name">Equipo de Transportes Las Carolinas</span>
+        </p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p class="footer-text">
+        Este es un mensaje automático de confirmación.<br>
+        Para cualquier consulta, comunícate con nuestro equipo de soporte.
+      </p>
+      <p class="footer-brand">
+        © {{YEAR}} Transportes Las Carolinas - Sistema de Tracking
+      </p>
+    </div>
+  </div>
+</body>
+</html>

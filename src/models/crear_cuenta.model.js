@@ -25,12 +25,36 @@ export const crearCuentaModel = {
     return rows.length > 0;
   },
 
-  // Obtener el siguiente número de casillero disponible
+  // Obtener el siguiente código de casillero disponible en formato EC-0001
   async obtenerSiguienteCodCasillero() {
-    const query = 'SELECT MAX(cod_casillero) as max_cod FROM casilleros_clientes';
+    const query = 'SELECT cod_casillero FROM casilleros_clientes ORDER BY id DESC LIMIT 1';
     const [rows] = await db.execute(query);
-    const maxCod = rows[0].max_cod;
-    return maxCod ? maxCod + 1 : 1; // Si no hay casilleros, empieza en 1
+    
+    if (rows.length === 0) {
+      // Si no hay casilleros, empieza en EC-0001
+      return 'EC-0001';
+    }
+    
+    const ultimoCodigo = rows[0].cod_casillero;
+    let siguienteNumero = 1;
+    
+    // Intentar extraer el número del último código
+    if (ultimoCodigo && typeof ultimoCodigo === 'string' && ultimoCodigo.includes('-')) {
+      // Si tiene el formato EC-0001
+      const partes = ultimoCodigo.split('-');
+      const numeroExtraido = parseInt(partes[1]);
+      if (!isNaN(numeroExtraido)) {
+        siguienteNumero = numeroExtraido + 1;
+      }
+    } else if (ultimoCodigo && !isNaN(ultimoCodigo)) {
+      // Si es un número antiguo (por compatibilidad)
+      siguienteNumero = parseInt(ultimoCodigo) + 1;
+    }
+    
+    // Formatear con ceros a la izquierda (mínimo 4 dígitos)
+    const numeroFormateado = siguienteNumero.toString().padStart(4, '0');
+    
+    return `EC-${numeroFormateado}`;
   },
 
   // Crear casillero del cliente

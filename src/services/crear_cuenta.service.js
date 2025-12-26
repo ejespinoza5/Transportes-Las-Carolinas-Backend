@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { crearCuentaModel } from '../models/crear_cuenta.model.js';
+import { emailService } from '../utils/email.js';
 
 export const crearCuentaService = {
   async crearCuentaYCasillero(datosCompletos) {
@@ -76,6 +77,20 @@ export const crearCuentaService = {
       };
 
       const id_casillero = await crearCuentaModel.crearCasillero(datosCasillero);
+
+      // 7. Enviar correo de bienvenida
+      try {
+        await emailService.enviarBienvenida(email, {
+          nombres,
+          apellidos,
+          cod_casillero,
+          tipo_entrega,
+          ciudad
+        });
+      } catch (emailError) {
+        // Si falla el email, no afecta la creación de la cuenta
+        console.error('Error al enviar email de bienvenida:', emailError);
+      }
 
       return {
         success: true,

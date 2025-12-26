@@ -15,13 +15,13 @@ export const casilleroClienteController = {
       if (error.message.includes('No se encontró')) {
         return res.status(404).json({
           success: false,
-          mensaje: error.message
+          message: error.message
         });
       }
 
       return res.status(500).json({
         success: false,
-        mensaje: 'Error al obtener el casillero',
+        message: 'Error al obtener el casillero',
         error: error.message
       });
     }
@@ -38,7 +38,7 @@ export const casilleroClienteController = {
 
       return res.status(500).json({
         success: false,
-        mensaje: 'Error al obtener los casilleros',
+        message: 'Error al obtener los casilleros',
         error: error.message
       });
     }
@@ -66,7 +66,7 @@ export const casilleroClienteController = {
 
       return res.status(500).json({
         success: false,
-        mensaje: 'Error al obtener los casilleros',
+        message: 'Error al obtener los casilleros',
         error: error.message
       });
     }
@@ -86,13 +86,13 @@ export const casilleroClienteController = {
       if (error.message.includes('no encontrado')) {
         return res.status(404).json({
           success: false,
-          mensaje: error.message
+          message: error.message
         });
       }
 
       return res.status(500).json({
         success: false,
-        mensaje: 'Error al obtener el casillero',
+        message: 'Error al obtener el casillero',
         error: error.message
       });
     }
@@ -119,27 +119,53 @@ export const casilleroClienteController = {
       if (error.message.includes('no encontrado')) {
         return res.status(404).json({
           success: false,
-          mensaje: error.message
+          message: error.message
         });
       }
 
       if (error.message.includes('permisos') || error.message.includes('cédula ya está')) {
         return res.status(403).json({
           success: false,
-          mensaje: error.message
+          message: error.message
         });
       }
 
       if (error.message.includes('campos')) {
         return res.status(400).json({
           success: false,
-          mensaje: error.message
+          message: error.message
         });
       }
 
       return res.status(500).json({
         success: false,
-        mensaje: 'Error al actualizar el casillero',
+        message: 'Error al actualizar el casillero',
+        error: error.message
+      });
+    }
+  },
+
+  // Dar de baja (cliente inactiva su propia cuenta)
+  async darDeBaja(req, res) {
+    try {
+      const { id_usuario } = req.usuario; // Del middleware verificarToken
+
+      const resultado = await casilleroClienteService.darDeBaja(id_usuario);
+
+      return res.status(200).json(resultado);
+    } catch (error) {
+      console.error('Error al dar de baja:', error);
+
+      if (error.message.includes('No se encontró') || error.message.includes('ya está inactivo')) {
+        return res.status(400).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Error al dar de baja la cuenta',
         error: error.message
       });
     }

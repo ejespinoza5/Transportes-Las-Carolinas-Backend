@@ -16,7 +16,10 @@ router.get('/', verificarToken, esAdmin, casilleroClienteController.obtenerTodos
 // GET /api/casilleros/codigo/:cod_casillero - Obtener casillero por código (solo admin)
 router.get('/codigo/:cod_casillero', verificarToken, esAdmin, casilleroClienteController.obtenerPorCodigo);
 
-
+// PUT /api/casilleros/:id - Actualizar casillero (admin o el mismo cliente)
 router.put('/:id', verificarToken, casilleroClienteController.actualizar);
+
+// POST /api/casilleros/dar-baja - Cliente se da de baja (inactiva su cuenta)
+router.post('/dar-baja', verificarToken, casilleroClienteController.darDeBaja);
 
 export default router;
