@@ -83,5 +83,12 @@ export const loginModel = {
     const query = 'UPDATE usuarios SET email = ? WHERE id_usuario = ?';
     const [result] = await db.execute(query, [nuevoEmail, id_usuario]);
     return result.affectedRows > 0;
+  },
+
+  // Actualizar email de cualquier usuario (para admin)
+  async actualizarEmailPorAdmin(id_usuario, nuevoEmail) {
+    const query = 'UPDATE usuarios SET email = ? WHERE id_usuario = ?';
+    const [result] = await db.execute(query, [nuevoEmail, id_usuario]);
+    return result.affectedRows > 0;
   }
 };

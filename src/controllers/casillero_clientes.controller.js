@@ -77,7 +77,7 @@ export const casilleroClienteController = {
     try {
       const { cod_casillero } = req.params;
 
-      const resultado = await casilleroClienteService.obtenerPorCodigo(parseInt(cod_casillero));
+      const resultado = await casilleroClienteService.obtenerPorCodigo(cod_casillero);
 
       return res.status(200).json(resultado);
     } catch (error) {

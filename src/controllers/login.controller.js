@@ -121,3 +121,40 @@ export const actualizarEmailController = {
     }
   }
 };
+
+export const actualizarEmailAdminController = {
+  async actualizarEmailPorAdmin(req, res) {
+    try {
+      const { id_usuario, nuevoEmail } = req.body;
+
+      const resultado = await loginService.actualizarEmailPorAdmin(id_usuario, nuevoEmail);
+
+      return res.status(200).json(resultado);
+    } catch (error) {
+      console.error('Error al actualizar email por admin:', error);
+
+      if (error.message.includes('obligatorio') ||
+          error.message.includes('formato') ||
+          error.message.includes('diferente') ||
+          error.message.includes('ya está registrado')) {
+        return res.status(400).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      if (error.message.includes('no encontrado')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Error al actualizar el email',
+        error: error.message
+      });
+    }
+  }
+};

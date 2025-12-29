@@ -174,5 +174,58 @@ export const loginService = {
         nuevoEmail
       }
     };
+  },
+
+  // Actualizar email de cualquier usuario (solo admin)
+  async actualizarEmailPorAdmin(idUsuarioObjetivo, nuevoEmail) {
+    // Validaciones básicas
+    if (!nuevoEmail) {
+      throw new Error('El nuevo email es obligatorio');
+    }
+
+    if (!idUsuarioObjetivo) {
+      throw new Error('El ID del usuario es obligatorio');
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(nuevoEmail)) {
+      throw new Error('El formato del email no es válido');
+    }
+
+    // Buscar usuario objetivo
+    const usuario = await loginModel.buscarUsuarioPorId(idUsuarioObjetivo);
+    
+    if (!usuario) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    // Verificar que el nuevo email sea diferente al actual
+    if (usuario.email === nuevoEmail) {
+      throw new Error('El nuevo email debe ser diferente al actual');
+    }
+
+    // Verificar que el email no esté en uso por otro usuario
+    const emailExiste = await loginModel.verificarEmailExistente(nuevoEmail, idUsuarioObjetivo);
+    
+    if (emailExiste) {
+      throw new Error('El email ya está registrado por otro usuario');
+    }
+
+    // Actualizar el email
+    const actualizado = await loginModel.actualizarEmailPorAdmin(idUsuarioObjetivo, nuevoEmail);
+
+    if (!actualizado) {
+      throw new Error('No se pudo actualizar el email');
+    }
+
+    return {
+      success: true,
+      message: 'Email actualizado exitosamente por el administrador',
+      data: {
+        id_usuario: idUsuarioObjetivo,
+        nuevoEmail
+      }
+    };
   }
 };
