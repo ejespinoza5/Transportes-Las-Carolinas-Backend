@@ -43,9 +43,9 @@ async function crearAdministrador() {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
-    // Insertar el administrador
+    // Insertar el administrador con email verificado
     await db.execute(
-      'INSERT INTO usuarios (email, password, id_rol, estado) VALUES (?, ?, 1, "activo")',
+      'INSERT INTO usuarios (email, password, id_rol, estado, email_verificado) VALUES (?, ?, 1, "activo", 1)',
       [ADMIN_EMAIL, passwordHash]
     );
 
