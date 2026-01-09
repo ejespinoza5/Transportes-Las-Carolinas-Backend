@@ -60,6 +60,35 @@ export const emailService = {
     }
   },
 
+  // Enviar código de verificación de email
+  async enviarCodigoVerificacion(email, codigo, nombres) {
+    // Cargar plantilla y reemplazar variables
+    const html = await this.cargarPlantilla('verificacion', {
+      nombres: nombres,
+      codigo: codigo
+    });
+
+    const mailOptions = {
+      from: `"Transportes Las Carolinas" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: '🔐 Código de Verificación - Transportes Las Carolinas',
+      html: html,
+      attachments: [{
+        filename: 'logo.png',
+        path: path.join(__dirname, '../images/logo las carolinas.png'),
+        cid: 'logo'
+      }]
+    };
+
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('Error al enviar email de verificación:', error);
+      throw new Error('No se pudo enviar el código de verificación');
+    }
+  },
+
   // Enviar correo de bienvenida al crear cuenta
   async enviarBienvenida(email, datosCliente) {
     const { nombres, apellidos, cod_casillero, tipo_entrega, ciudad } = datosCliente;

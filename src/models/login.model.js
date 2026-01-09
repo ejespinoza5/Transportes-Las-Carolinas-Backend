@@ -4,7 +4,7 @@ export const loginModel = {
   // Buscar usuario por email
   async buscarUsuarioPorEmail(email) {
     const query = `
-      SELECT id_usuario, email, password, id_rol, estado
+      SELECT id_usuario, email, email_verificado, password, id_rol, estado
       FROM usuarios
       WHERE email = ?
     `;

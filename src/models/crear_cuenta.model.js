@@ -100,5 +100,68 @@ export const crearCuentaModel = {
     ]);
 
     return result.insertId;
+  },
+
+  // Guardar código de verificación
+  async guardarCodigoVerificacion(email, codigo) {
+    // Código expira en 15 minutos
+    const expiraEn = new Date();
+    expiraEn.setMinutes(expiraEn.getMinutes() + 15);
+
+    const query = `
+      INSERT INTO codigos_verificacion (email, codigo, expira_en)
+      VALUES (?, ?, ?)
+    `;
+    
+    const [result] = await db.execute(query, [email, codigo, expiraEn]);
+    return result.insertId;
+  },
+
+  // Verificar código de verificación
+  async verificarCodigo(email, codigo) {
+    const query = `
+      SELECT * FROM codigos_verificacion
+      WHERE email = ? AND codigo = ? AND usado = FALSE AND expira_en > NOW()
+      ORDER BY id DESC
+      LIMIT 1
+    `;
+    
+    const [rows] = await db.execute(query, [email, codigo]);
+    return rows.length > 0 ? rows[0] : null;
+  },
+
+  // Marcar código como usado
+  async marcarCodigoUsado(id) {
+    const query = 'UPDATE codigos_verificacion SET usado = TRUE WHERE id = ?';
+    await db.execute(query, [id]);
+  },
+
+  // Marcar email como verificado
+  async marcarEmailVerificado(email) {
+    const query = 'UPDATE usuarios SET email_verificado = TRUE WHERE email = ?';
+    await db.execute(query, [email]);
+  },
+
+  // Limpiar códigos expirados
+  async limpiarCodigosExpirados() {
+    const query = 'DELETE FROM codigos_verificacion WHERE expira_en < NOW() OR usado = TRUE';
+    await db.execute(query);
+  },
+
+  // Actualizar email de usuario no verificado
+  async actualizarEmailNoVerificado(emailActual, emailNuevo) {
+    const query = `
+      UPDATE usuarios 
+      SET email = ? 
+      WHERE email = ? AND email_verificado = FALSE
+    `;
+    const [result] = await db.execute(query, [emailNuevo, emailActual]);
+    return result.affectedRows > 0;
+  },
+
+  // Invalidar códigos antiguos del email
+  async invalidarCodigosAntiguos(email) {
+    const query = 'UPDATE codigos_verificacion SET usado = TRUE WHERE email = ?';
+    await db.execute(query, [email]);
   }
 };

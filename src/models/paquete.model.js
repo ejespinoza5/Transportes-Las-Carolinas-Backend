@@ -242,7 +242,10 @@ WHERE p.Guia = ?`,
           p.Courier,
           p.guia_tramaco,
 
+          e.id_estado,
           e.nombre_estado AS estado,
+          e.color,
+          e.orden,
           h.observaciones,
           h.fecha_cambio,
           h.hora_cambio

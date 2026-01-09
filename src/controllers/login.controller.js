@@ -28,6 +28,15 @@ export const loginController = {
         });
       }
 
+      // Email no verificado
+      if (error.message.includes('verificar tu correo')) {
+        return res.status(403).json({
+          success: false,
+          message: error.message,
+          emailNoVerificado: true
+        });
+      }
+
       // Error genérico
       return res.status(500).json({
         success: false,

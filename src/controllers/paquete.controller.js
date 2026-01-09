@@ -1,5 +1,6 @@
 import XLSX from "xlsx";
 import { PaqueteService } from "../services/paquete.service.js";
+import { generarPDFPaquete } from "../utils/pdfGenerator.js";
 
 export const PaqueteController = {
     getAll: async (req, res) => {
@@ -158,6 +159,30 @@ export const PaqueteController = {
       res.status(error.status || 500).json({
         error: error.message || "Error interno del servidor"
       });
+    }
+  },
+
+  getByGuiaPDF: async (req, res) => {
+    try {
+      const { guia } = req.params;
+      const result = await PaqueteService.getByGuiaFull(guia);
+      
+      if (!result || !result.paquete) {
+        return res.status(404).json({
+          error: "No se encontró el paquete con la guía especificada"
+        });
+      }
+
+      // Generar y enviar PDF (no return porque el stream maneja el response)
+      generarPDFPaquete(result.paquete, result.historial, res);
+      
+    } catch (error) {
+      console.error("Error en getByGuiaPDF:", error);
+      if (!res.headersSent) {
+        res.status(error.status || 500).json({
+          error: error.message || "Error al generar el PDF"
+        });
+      }
     }
   },
 

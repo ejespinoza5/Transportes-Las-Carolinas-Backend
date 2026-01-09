@@ -16,9 +16,21 @@ export const loginService = {
       throw new Error('Credenciales incorrectas');
     }
 
+    // Verificar contraseña primero
+    const passwordValida = await bcrypt.compare(password, usuario.password);
+    
+    if (!passwordValida) {
+      throw new Error('Credenciales incorrectas');
+    }
+
     // Verificar que el usuario esté activo
     if (usuario.estado !== 'activo') {
       throw new Error('Usuario inactivo. Contacte al administrador');
+    }
+
+    // Verificar que el email esté verificado (solo para clientes - rol 2)
+    if (usuario.id_rol === 2 && !usuario.email_verificado) {
+      throw new Error('Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
     }
 
     // Verificar que el casillero esté activo (solo para clientes)
@@ -29,13 +41,6 @@ export const loginService = {
     
     if (!casilleroActivo) {
       throw new Error('Su casillero está inactivo. Contacte al administrador');
-    }
-
-    // Verificar contraseña
-    const passwordValida = await bcrypt.compare(password, usuario.password);
-    
-    if (!passwordValida) {
-      throw new Error('Credenciales incorrectas');
     }
 
     // Actualizar último acceso

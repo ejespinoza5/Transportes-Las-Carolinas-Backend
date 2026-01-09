@@ -280,12 +280,17 @@ getByGuiaFull: async (guia) => {
   };
 
   // --- Historial agrupado ---
-  const historial = rows.map(r => ({
-    estado: r.estado,
-    observaciones: r.observaciones,
-    fecha_cambio: r.fecha_cambio,
-    hora_cambio: r.hora_cambio
-  }));
+  const historial = rows
+    .map(r => ({
+      orden: r.orden,
+      id_estado: r.id_estado,
+      estado: r.estado,
+      color: r.color,
+      observaciones: r.observaciones,
+      fecha_cambio: r.fecha_cambio,
+      hora_cambio: r.hora_cambio
+    }))
+    .sort((a, b) => a.orden - b.orden); // Ordenar por campo orden ascendente
 
   return { paquete, historial };
 },

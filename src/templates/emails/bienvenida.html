@@ -20,7 +20,7 @@
       box-shadow: 0 10px 40px rgba(10, 42, 102, 0.15);
     }
     .header { 
-      background: linear-gradient(135deg, #0A2A66 0%, #164d8a 100%);
+      background: #E8F0FE;
       padding: 40px 30px;
       text-align: center;
       position: relative;
@@ -31,31 +31,30 @@
     .logo {
       max-width: 180px;
       height: auto;
-      filter: brightness(0) invert(1);
     }
     .header-title {
-      color: #ffffff;
+      color: #333333;
       font-size: 28px;
       font-weight: 700;
       margin: 0;
       letter-spacing: 0.5px;
     }
     .header-subtitle {
-      color: rgba(255, 255, 255, 0.95);
+      color: #666666;
       font-size: 16px;
       margin-top: 10px;
       font-weight: 500;
     }
     .welcome-badge {
       display: inline-block;
-      background: rgba(255, 255, 255, 0.2);
-      color: #ffffff;
+      background: rgba(199, 196, 196, 0.2);
+      color: #000000;
       padding: 8px 20px;
       border-radius: 20px;
       font-size: 14px;
       font-weight: 600;
       margin-top: 15px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      border: 2px solid rgba(0, 0, 0, 0.3);
     }
     .content { 
       padding: 40px 30px;
@@ -145,7 +144,7 @@
       line-height: 1.6;
     }
     .info-list li:before {
-      content: "✓";
+      content: "•";
       color: #0A2A66;
       font-weight: bold;
       position: absolute;
@@ -240,11 +239,11 @@
       </div>
       <h1 class="header-title">¡Bienvenido!</h1>
       <p class="header-subtitle">Tu cuenta ha sido creada exitosamente</p>
-      <div class="welcome-badge">✨ Miembro desde {{YEAR}}</div>
+      <div class="welcome-badge">Miembro desde {{YEAR}}</div>
     </div>
     
     <div class="content">
-      <p class="greeting">¡Hola, {{NOMBRE_COMPLETO}}! 🎉</p>
+      <p class="greeting">¡Hola, {{NOMBRE_COMPLETO}}!</p>
       
       <p class="message">
         Gracias por <span class="highlight">confiar en Transportes Las Carolinas</span>. 
@@ -263,30 +262,30 @@
 
       <div class="datos-cliente">
         <div class="dato-row">
-          <div class="dato-label">👤 Nombre:</div>
+          <div class="dato-label">Nombre:</div>
           <div class="dato-value">{{NOMBRE_COMPLETO}}</div>
         </div>
         <div class="dato-row">
-          <div class="dato-label">📦 Casillero:</div>
+          <div class="dato-label">Casillero:</div>
           <div class="dato-value">{{COD_CASILLERO}}</div>
         </div>
         <div class="dato-row">
-          <div class="dato-label">📧 Email:</div>
+          <div class="dato-label">Email:</div>
           <div class="dato-value">{{EMAIL}}</div>
         </div>
         <div class="dato-row">
-          <div class="dato-label">🚚 Tipo de Entrega:</div>
+          <div class="dato-label">Tipo de Entrega:</div>
           <div class="dato-value">{{TIPO_ENTREGA}}</div>
         </div>
         <div class="dato-row">
-          <div class="dato-label">📍 Ciudad:</div>
+          <div class="dato-label">Ciudad:</div>
           <div class="dato-value">{{CIUDAD}}</div>
         </div>
       </div>
 
       <div class="info-section">
         <div class="info-title">
-          <span class="info-icon">📋</span>
+          <span class="info-icon"></span>
           ¿Cómo funciona tu casillero?
         </div>
         <ul class="info-list">
@@ -298,7 +297,7 @@
 
       <div class="info-section">
         <div class="info-title">
-          <span class="info-icon">🚀</span>
+          <span class="info-icon"></span>
           Próximos pasos
         </div>
         <ul class="info-list">
@@ -309,7 +308,7 @@
 
       <div class="cta-section">
         <p class="cta-text">
-          <strong>💡 Consejo:</strong> Guarda tu número de casillero <strong>{{COD_CASILLERO}}</strong> 
+          <strong>Consejo:</strong> Guarda tu número de casillero <strong>{{COD_CASILLERO}}</strong> 
           en un lugar seguro. Lo necesitarás para todas tus operaciones.
         </p>
       </div>
