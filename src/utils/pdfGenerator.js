@@ -153,7 +153,16 @@ export const generarPDFPaquete = (paquete, historial, res) => {
 
   yPos += 32
 
+  // Obtener el estado más reciente del historial
+  const estadosRecientes = [...historial].sort((a, b) => {
+    const fechaA = new Date(`${a.fecha_cambio} ${a.hora_cambio}`)
+    const fechaB = new Date(`${b.fecha_cambio} ${b.hora_cambio}`)
+    return fechaA - fechaB // Ordenar ascendente
+  })
+  const estadoActual = estadosRecientes[estadosRecientes.length - 1]?.estado || "N/A"
+
   const datos = [
+    { label: "Estado Actual", value: estadoActual, icono: ">" },
     { label: "Servicio", value: paquete.Servicio, icono: ">" },
     { label: "Courier", value: paquete.Courier, icono: ">" },
     { label: "Peso", value: `${paquete.Peso_LB} lb`, icono: ">" },
