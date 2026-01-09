@@ -1,4 +1,6 @@
 import { PaquetesClientesModel } from "../models/paquetes_clientes.model.js";
+import { PaqueteModel } from "../models/paquete.model.js";
+import { HistorialEstadosModel } from "../models/historial_estados.model.js";
 
 export const PaquetesClientesService = {
   // Obtener todos los paquetes asignados (admin)
@@ -36,6 +38,29 @@ export const PaquetesClientesService = {
       throw new Error("Este paquete ya está asignado a un cliente");
     }
 
+    // Preparar datos para actualizar en la tabla paquete
+    const datosActualizarPaquete = {};
+    
+    // Si se proporciona un peso, actualizar también en la tabla paquete
+    if (data.peso_lb !== undefined && data.peso_lb !== null) {
+      datosActualizarPaquete.Peso_LB = data.peso_lb;
+    }
+    
+    // Actualizar paquete si hay datos para actualizar
+    if (Object.keys(datosActualizarPaquete).length > 0) {
+      await PaqueteModel.update(data.id_Paquete, datosActualizarPaquete);
+    }
+
+    // Si se proporcionan observaciones, actualizar en el último estado del historial
+    if (data.observaciones !== undefined && data.observaciones !== null) {
+      const ultimoEstado = await HistorialEstadosModel.getUltimoEstadoPaquete(data.id_Paquete);
+      if (ultimoEstado) {
+        await HistorialEstadosModel.update(ultimoEstado.id_historial, {
+          observaciones: data.observaciones
+        });
+      }
+    }
+
     return await PaquetesClientesModel.create(data);
   },
 
@@ -66,6 +91,29 @@ export const PaquetesClientesService = {
       const yaAsignado = await PaquetesClientesModel.isPaqueteAsignado(data.id_Paquete, id_asignacion);
       if (yaAsignado) {
         throw new Error("Este paquete ya está asignado a otro cliente");
+      }
+    }
+
+    // Preparar datos para actualizar en la tabla paquete
+    const datosActualizarPaquete = {};
+    
+    // Si se modifica el peso, actualizar también en la tabla paquete
+    if (data.peso_lb !== undefined && data.peso_lb !== null) {
+      datosActualizarPaquete.Peso_LB = data.peso_lb;
+    }
+    
+    // Actualizar paquete si hay datos para actualizar
+    if (Object.keys(datosActualizarPaquete).length > 0) {
+      await PaqueteModel.update(data.id_Paquete, datosActualizarPaquete);
+    }
+
+    // Si se modifican las observaciones, actualizar en el último estado del historial
+    if (data.observaciones !== undefined && data.observaciones !== null) {
+      const ultimoEstado = await HistorialEstadosModel.getUltimoEstadoPaquete(data.id_Paquete);
+      if (ultimoEstado) {
+        await HistorialEstadosModel.update(ultimoEstado.id_historial, {
+          observaciones: data.observaciones
+        });
       }
     }
 

@@ -1,5 +1,6 @@
 import { PaqueteModel } from "../models/paquete.model.js";
 import { HistorialEstadosModel } from "../models/historial_estados.model.js";
+import { PaquetesClientesModel } from "../models/paquetes_clientes.model.js";
 import { db } from "../config/db.js";
 
 export const PaqueteService = {
@@ -110,7 +111,15 @@ getById: (id) => {
         };
       }
 
-      return await PaqueteModel.update(id, data);
+      // Actualizar el paquete
+      const result = await PaqueteModel.update(id, data);
+
+      // Si se actualizó el peso, sincronizar con paquetes_clientes
+      if (data.Peso_LB !== undefined && data.Peso_LB !== null) {
+        await PaquetesClientesModel.actualizarPesoPorPaquete(id, data.Peso_LB);
+      }
+
+      return result;
 
     } catch (error) {
       // Si ya es un error personalizado, lanzarlo tal cual
@@ -167,6 +176,10 @@ getById: (id) => {
       hora_cambio: data.hora_cambio,
       usuario: data.usuario || null
     });
+
+    // 5. Actualizar observaciones en paquetes_clientes (el nuevo estado es el más reciente)
+    const observacionesSync = data.observaciones !== undefined ? data.observaciones : null;
+    await PaquetesClientesModel.actualizarObservacionesPorPaquete(id, observacionesSync);
 
     return { ok: true, message: "Estado actualizado y registrado en historial" };
 

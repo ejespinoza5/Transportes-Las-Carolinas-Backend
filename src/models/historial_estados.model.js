@@ -127,6 +127,21 @@ export const HistorialEstadosModel = {
       [id]
     );
     return result;
+  },
+
+  // Obtener el último estado de un paquete (más reciente)
+  getUltimoEstadoPaquete: async (id_Paquete) => {
+    const [rows] = await db.query(
+      `SELECT h.id_historial, h.id_Paquete, h.id_estado, e.nombre_estado,
+      h.observaciones, h.fecha_cambio, h.hora_cambio, h.usuario, h.estado
+      FROM historial_estados h
+      LEFT JOIN estados e ON h.id_estado = e.id_estado
+      WHERE h.id_Paquete = ? AND h.estado = 'activo'
+      ORDER BY h.fecha_cambio DESC, h.hora_cambio DESC, h.id_historial DESC
+      LIMIT 1`,
+      [id_Paquete]
+    );
+    return rows[0];
   }
 
 };

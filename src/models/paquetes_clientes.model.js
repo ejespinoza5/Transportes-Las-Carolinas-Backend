@@ -153,5 +153,23 @@ export const PaquetesClientesModel = {
       [id_cliente]
     );
     return rows.length > 0;
+  },
+
+  // Actualizar peso del paquete en paquetes_clientes por id_Paquete
+  actualizarPesoPorPaquete: async (id_Paquete, peso_lb) => {
+    const [result] = await db.query(
+      `UPDATE paquetes_clientes SET peso_lb = ? WHERE id_Paquete = ? AND estado = 'activo'`,
+      [peso_lb, id_Paquete]
+    );
+    return result.affectedRows;
+  },
+
+  // Actualizar observaciones del paquete en paquetes_clientes por id_Paquete
+  actualizarObservacionesPorPaquete: async (id_Paquete, observaciones) => {
+    const [result] = await db.query(
+      `UPDATE paquetes_clientes SET observaciones = ? WHERE id_Paquete = ? AND estado = 'activo'`,
+      [observaciones, id_Paquete]
+    );
+    return result.affectedRows;
   }
 };

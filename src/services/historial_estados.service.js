@@ -1,4 +1,5 @@
 import { HistorialEstadosModel } from "../models/historial_estados.model.js";
+import { PaquetesClientesModel } from "../models/paquetes_clientes.model.js";
 import { PaqueteModel } from "../models/paquete.model.js";
 
 export const HistorialEstadosService = {
@@ -53,10 +54,30 @@ export const HistorialEstadosService = {
 
   update: async (id, data) => {
     try {
+      // Obtener el historial antes de actualizarlo
+      const historialActual = await HistorialEstadosModel.getById(id);
+      if (!historialActual) {
+        throw { status: 404, message: "Historial no encontrado" };
+      }
+
       const result = await HistorialEstadosModel.update(id, data);
       if (result.affectedRows === 0) {
         throw { status: 404, message: "Historial no encontrado o sin cambios" };
       }
+
+      // Verificar si es el último estado del paquete
+      const ultimoEstado = await HistorialEstadosModel.getUltimoEstadoPaquete(historialActual.id_Paquete);
+      const idNumerico = parseInt(id);
+      
+      // Si el historial actualizado es el más reciente y se actualizaron observaciones
+      if (ultimoEstado && ultimoEstado.id_historial === idNumerico && data.observaciones !== undefined) {
+        // Sincronizar con paquetes_clientes
+        await PaquetesClientesModel.actualizarObservacionesPorPaquete(
+          historialActual.id_Paquete,
+          data.observaciones
+        );
+      }
+
       return { ok: true, message: "Historial actualizado correctamente" };
     } catch (error) {
       throw error.status ? error : {
