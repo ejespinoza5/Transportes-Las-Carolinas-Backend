@@ -51,7 +51,10 @@ export const casilleroClienteModel = {
   },
 
   // Obtener todos los casilleros con paginación (solo admin)
-  async obtenerTodosPaginados(page = 1, limit = 10, filtros = {}) {
+async obtenerTodosPaginados(page = 1, limit = 10, filtros = {}) {
+    // ✅ Asegurar que sean números enteros
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
     const offset = (page - 1) * limit;
     
     // Construir WHERE dinámico según filtros
@@ -104,15 +107,16 @@ export const casilleroClienteModel = {
       ORDER BY c.fecha_registro DESC
       LIMIT ? OFFSET ?
     `;
-    params.push(limit, offset);
-    const [rows] = await db.execute(dataQuery, params);
+    const dataParams = [...params, parseInt(limit), parseInt(offset)];
+    
+    const [rows] = await db.query(dataQuery, dataParams);
     
     return {
       data: rows,
       pagination: {
         total,
-        page,
-        limit,
+        page: parseInt(page),
+        limit: parseInt(limit),
         totalPages: Math.ceil(total / limit)
       }
     };
