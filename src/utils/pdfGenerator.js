@@ -18,16 +18,25 @@ export const generarPDFPaquete = (paquete, historial, res) => {
     doc.pipe(res)
 
     // Manejar errores del stream
-    doc.on('error', (err) => {
-      console.error('Error en PDF:', err)
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Error al generar PDF' })
-      }
-    })
-
-    res.on('error', (err) => {
-      console.error('Error en response:', err)
-    })
+  const docErrorHandler = (err) => {
+    console.error('Error en PDF:', err)
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error al generar PDF' })
+    }
+  };
+  
+  const resErrorHandler = (err) => {
+    console.error('Error en response:', err)
+  };
+  
+  doc.on('error', docErrorHandler);
+  res.on('error', resErrorHandler);
+  
+  // Limpiar listeners cuando termine
+  doc.on('end', () => {
+    doc.removeListener('error', docErrorHandler);
+    res.removeListener('error', resErrorHandler);
+  });
 
   const colores = {
     // Colores principales (manteniendo la identidad)

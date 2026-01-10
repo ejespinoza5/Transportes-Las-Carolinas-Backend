@@ -19,9 +19,25 @@ const app = express();
 
 // Configurar CORS
 app.use(cors({
-  origin: '*', // Permite todos los orígenes (cambiar en producción)
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://lascarolinasenvios.com',
+      'https://www.lascarolinasenvios.com',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ];
+    
+    // Permitir requests sin origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
