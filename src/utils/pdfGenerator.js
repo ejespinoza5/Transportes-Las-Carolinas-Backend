@@ -304,12 +304,25 @@ export const generarPDFPaquete = (paquete, historial, res) => {
       .font("Helvetica-Bold")
       .text(estado.estado, 105, yPos + 6, { width: boxWidth - 180 })
 
-    const fechaFormateada = new Date(estado.fecha_cambio).toLocaleDateString("es-ES")
+    // Formatear fecha directamente sin conversión de zona horaria
+    let fechaFormateada = '';
+    if (estado.fecha_cambio) {
+      if (typeof estado.fecha_cambio === 'string') {
+        const [year, month, day] = estado.fecha_cambio.split('-');
+        fechaFormateada = `${day}/${month}/${year}`;
+      } else if (estado.fecha_cambio instanceof Date) {
+        const day = String(estado.fecha_cambio.getDate()).padStart(2, '0');
+        const month = String(estado.fecha_cambio.getMonth() + 1).padStart(2, '0');
+        const year = estado.fecha_cambio.getFullYear();
+        fechaFormateada = `${day}/${month}/${year}`;
+      }
+    }
+    
     doc
       .fillColor(colores.grisMedio)
       .fontSize(8)
       .font("Helvetica")
-      .text(`${fechaFormateada} - ${estado.hora_cambio}`, 105, yPos + 20)
+      .text(`${fechaFormateada} - ${estado.hora_cambio || ''}`, 105, yPos + 20)
 
     if (isLast) {
       const badgeX = boxWidth - 90

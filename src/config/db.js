@@ -10,7 +10,8 @@ export const db = mysql.createPool({
   database: process.env.DB_NAME ,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
-  timezone: '+00:00' // Forzar UTC
+  timezone: '+00:00', // Forzar UTC
+  dateStrings: true // Devolver fechas como strings en lugar de objetos Date
 });
 
 // Debug: Mostrar zona horaria
