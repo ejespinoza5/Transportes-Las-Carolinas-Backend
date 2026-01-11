@@ -32,10 +32,18 @@ getById: (id) => {
         };
       }
 
-      // Agregar fecha y hora de registro automáticamente
+      // Agregar fecha y hora de registro automáticamente en zona horaria Ecuador (GMT-5)
       const now = new Date();
-      const fechaRegistro = now.toISOString().split('T')[0]; // YYYY-MM-DD
-      const horaRegistro = now.toTimeString().split(' ')[0]; // HH:MM:SS
+      const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+      const year = ecuadorTime.getFullYear();
+      const month = String(ecuadorTime.getMonth() + 1).padStart(2, '0');
+      const day = String(ecuadorTime.getDate()).padStart(2, '0');
+      const hours = String(ecuadorTime.getHours()).padStart(2, '0');
+      const minutes = String(ecuadorTime.getMinutes()).padStart(2, '0');
+      const seconds = String(ecuadorTime.getSeconds()).padStart(2, '0');
+      
+      const fechaRegistro = `${year}-${month}-${day}`; // YYYY-MM-DD
+      const horaRegistro = `${hours}:${minutes}:${seconds}`; // HH:MM:SS
 
       const paqueteData = {
         ...data,
@@ -374,10 +382,18 @@ getByGuiaFull: async (guia) => {
   // Método para importación: actualiza si existe, crea si no existe
   upsert: async (data) => {
     try {
-      // Agregar fecha y hora de registro automáticamente
+      // Agregar fecha y hora de registro automáticamente en zona horaria Ecuador (GMT-5)
       const now = new Date();
-      const fechaRegistro = now.toISOString().split('T')[0];
-      const horaRegistro = now.toTimeString().split(' ')[0];
+      const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+      const year = ecuadorTime.getFullYear();
+      const month = String(ecuadorTime.getMonth() + 1).padStart(2, '0');
+      const day = String(ecuadorTime.getDate()).padStart(2, '0');
+      const hours = String(ecuadorTime.getHours()).padStart(2, '0');
+      const minutes = String(ecuadorTime.getMinutes()).padStart(2, '0');
+      const seconds = String(ecuadorTime.getSeconds()).padStart(2, '0');
+      
+      const fechaRegistro = `${year}-${month}-${day}`; // YYYY-MM-DD
+      const horaRegistro = `${hours}:${minutes}:${seconds}`; // HH:MM:SS
 
       const paqueteData = {
         ...data,
