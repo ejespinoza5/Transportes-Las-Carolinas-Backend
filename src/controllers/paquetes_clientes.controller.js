@@ -12,47 +12,9 @@ export const PaquetesClientesController = {
   getAll: async (req, res) => {
     try {
       const paquetes = await PaquetesClientesService.getAll();
-      
-      // Agrupar paquetes por cliente
-      const clientesMap = {};
-      
-      paquetes.forEach(paquete => {
-        const idCliente = paquete.id_cliente;
-        
-        if (!clientesMap[idCliente]) {
-          clientesMap[idCliente] = {
-            id_cliente: paquete.id_cliente,
-            nombre_cliente: paquete.nombre_cliente,
-            apellido_cliente: paquete.apellido_cliente,
-            cod_casillero: paquete.cod_casillero,
-            paquetes: []
-          };
-        }
-        
-        // Agregar paquete sin datos del cliente
-        clientesMap[idCliente].paquetes.push({
-          id_asignacion: paquete.id_asignacion,
-          id_Paquete: paquete.id_Paquete,
-          peso_lb: paquete.peso_lb,
-          foto_paquete: paquete.foto_paquete,
-          observaciones: paquete.observaciones,
-          fecha_asignacion: paquete.fecha_asignacion,
-          hora_asignacion: paquete.hora_asignacion,
-          Guia: paquete.Guia,
-          Servicio: paquete.Servicio,
-          Courier: paquete.Courier,
-          id_estado: paquete.id_estado,
-          guia_tramaco: paquete.guia_tramaco,
-          nombre_estado: paquete.nombre_estado
-        });
-      });
-      
-      // Convertir el objeto a array
-      const clientesConPaquetes = Object.values(clientesMap);
-      
       res.json({
         ok: true,
-        data: clientesConPaquetes
+        data: paquetes
       });
     } catch (error) {
       res.status(500).json({

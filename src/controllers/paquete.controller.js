@@ -1,4 +1,5 @@
 import XLSX from "xlsx";
+import fs from "fs";
 import { PaqueteService } from "../services/paquete.service.js";
 import { generarPDFPaquete } from "../utils/pdfGenerator.js";
 
@@ -228,7 +229,11 @@ export const importarPaquetes = async (req, res) => {
     const id_grupo = req.body.id_grupo ? parseInt(req.body.id_grupo) : null;
     const id_estado = req.body.id_estado ? parseInt(req.body.id_estado) : null;
 
-    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    // Leer el archivo desde disco (diskStorage)
+    const filePath = req.file.path;
+    const fileBuffer = fs.readFileSync(filePath);
+    
+    const workbook = XLSX.read(fileBuffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
 
     // Normalizar encabezados automáticamente
@@ -280,6 +285,14 @@ export const importarPaquetes = async (req, res) => {
       }
     }
 
+    // Eliminar archivo temporal después de procesarlo
+    try {
+      fs.unlinkSync(filePath);
+      console.log('Archivo temporal eliminado:', filePath);
+    } catch (unlinkError) {
+      console.error('Error al eliminar archivo temporal:', unlinkError);
+    }
+
     return res.json({
       message: "Importación finalizada",
       insertados,
@@ -289,6 +302,15 @@ export const importarPaquetes = async (req, res) => {
     });
 
   } catch (error) {
+    // Intentar eliminar archivo temporal en caso de error
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error al eliminar archivo temporal:', unlinkError);
+      }
+    }
+    
     return res.status(500).json({
       message: "Error procesando el archivo",
       detalle: error.toString()
