@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import sharp from "sharp";
 import { fileURLToPath } from "url";
 import { PaquetesClientesController } from "../controllers/paquetes_clientes.controller.js";
 import { verificarToken, esAdmin } from "../middlewares/auth.middleware.js";
@@ -19,16 +20,8 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, "paquete-" + uniqueSuffix + ext);
-  }
-});
+// Usar memoryStorage para procesar con Sharp antes de guardar
+const storage = multer.memoryStorage();
 
 // Filtro para aceptar solo imágenes
 const fileFilter = (req, file, cb) => {
@@ -44,9 +37,39 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5 MB máximo
+    fileSize: 20 * 1024 * 1024 // 20 MB máximo
   }
 });
+
+// Middleware para comprimir imágenes con Sharp
+const compressImage = async (req, res, next) => {
+  if (!req.file) {
+    return next();
+  }
+
+  try {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const filename = "paquete-" + uniqueSuffix + ".jpg";
+    const filepath = path.join(uploadsDir, filename);
+
+    // Comprimir imagen con Sharp
+    await sharp(req.file.buffer)
+      .resize(1920, 1920, { // Máximo 1920px (mantiene aspecto)
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 80 }) // Calidad 80% (buen balance)
+      .toFile(filepath);
+
+    // Actualizar req.file con el nombre del archivo guardado
+    req.file.filename = filename;
+    req.file.path = filepath;
+
+    next();
+  } catch (error) {
+    next(new Error("Error al procesar la imagen: " + error.message));
+  }
+};
 
 // ===== RUTAS PROTEGIDAS =====
 
@@ -74,7 +97,7 @@ router.post(
         return res.status(400).json({
           ok: false,
           message: err.code === 'LIMIT_FILE_SIZE' 
-            ? 'El archivo excede el tamaño máximo permitido (5 MB)' 
+            ? 'El archivo excede el tamaño máximo permitido (20 MB)' 
             : 'Error al subir el archivo',
           detalle: err.message
         });
@@ -88,6 +111,7 @@ router.post(
       next();
     });
   },
+  compressImage, // Comprimir imagen
   PaquetesClientesController.create
 );
 
@@ -103,7 +127,7 @@ router.put(
         return res.status(400).json({
           ok: false,
           message: err.code === 'LIMIT_FILE_SIZE' 
-            ? 'El archivo excede el tamaño máximo permitido (5 MB)' 
+            ? 'El archivo excede el tamaño máximo permitido (20 MB)' 
             : 'Error al subir el archivo',
           detalle: err.message
         });
@@ -117,6 +141,7 @@ router.put(
       next();
     });
   },
+  compressImage, // Comprimir imagen
   PaquetesClientesController.update
 );
 

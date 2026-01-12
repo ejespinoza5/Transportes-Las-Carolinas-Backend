@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // Límite 5MB
+  limits: { fileSize: 20 * 1024 * 1024 } // Límite 20MB
 });
 
 router.get("/", verificarToken, esAdmin, PaqueteController.getAll);
