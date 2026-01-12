@@ -162,14 +162,18 @@ export const generarPDFPaquete = (paquete, historial, res) => {
 
   yPos += 32
 
-  // Obtener el estado más reciente del historial
-  const estadosRecientes = [...historial].sort((a, b) => {
-    const fechaA = new Date(`${a.fecha_cambio} ${a.hora_cambio}`)
-    const fechaB = new Date(`${b.fecha_cambio} ${b.hora_cambio}`)
-    return fechaA - fechaB // Ordenar ascendente
-  })
-  const estadoActual = estadosRecientes[estadosRecientes.length - 1]?.estado || "N/A"
-
+  // Obtener el estado actual del paquete del historial
+  const estadoActualPaquete = historial.find(e => e.id_estado === paquete.id_estado_actual);
+  const estadoActual = estadoActualPaquete?.estado || "N/A"
+  
+  // Determinar si el estado actual del paquete es el último estado posible del sistema
+  // Solo mostrar guia_tramaco si:
+  // 1. El paquete tiene guia_tramaco
+  // 2. El orden del estado actual del paquete es igual al orden máximo del sistema
+  const esEstadoFinal = paquete.guia_tramaco && 
+                        estadoActualPaquete?.orden === paquete.orden_maximo_sistema
+  
+  // Construir datos básicos
   const datos = [
     { label: "Estado Actual", value: estadoActual, icono: ">" },
     { label: "Servicio", value: paquete.Servicio, icono: ">" },
@@ -180,7 +184,11 @@ export const generarPDFPaquete = (paquete, historial, res) => {
       value: paquete.Fecha_Salida ? new Date(paquete.Fecha_Salida).toLocaleDateString("es-ES") : "N/A",
       icono: ">",
     },
-    { label: "Guia Tramaco", value: paquete.guia_tramaco || "N/A", icono: ">" },
+    {
+      label: "Guia Tramaco",
+      value: esEstadoFinal ? paquete.guia_tramaco : "N/A",
+      icono: ">"
+    }
   ]
 
   const colWidth = (doc.page.width - 100) / 2
@@ -240,7 +248,13 @@ export const generarPDFPaquete = (paquete, historial, res) => {
 
   yPos += 28
 
+  // Ordenar historial por el campo 'orden' que viene de la tabla estados
   const historialOrdenado = [...historial].sort((a, b) => {
+    // Primero por orden (si existe)
+    if (a.orden !== b.orden) {
+      return a.orden - b.orden
+    }
+    // Si tienen el mismo orden, ordenar por fecha
     const fechaA = new Date(`${a.fecha_cambio} ${a.hora_cambio}`)
     const fechaB = new Date(`${b.fecha_cambio} ${b.hora_cambio}`)
     return fechaA - fechaB

@@ -32,11 +32,11 @@ const storage = multer.diskStorage({
 
 // Filtro para aceptar solo imágenes
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+  const allowedTypes = ["image/jpeg", "image/jpg"];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Solo se permiten archivos de imagen (JPEG, PNG)"), false);
+    cb(new Error("Solo se permiten archivos de imagen (JPEG, JPG)"), false);
   }
 };
 
@@ -67,7 +67,27 @@ router.post(
   "/",
   verificarToken,
   esAdmin,
-  upload.single("foto_paquete"),
+  (req, res, next) => {
+    upload.single("foto_paquete")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        // Error de multer (tamaño, etc.)
+        return res.status(400).json({
+          ok: false,
+          message: err.code === 'LIMIT_FILE_SIZE' 
+            ? 'El archivo excede el tamaño máximo permitido (5 MB)' 
+            : 'Error al subir el archivo',
+          detalle: err.message
+        });
+      } else if (err) {
+        // Error personalizado (tipo de archivo)
+        return res.status(400).json({
+          ok: false,
+          message: err.message
+        });
+      }
+      next();
+    });
+  },
   PaquetesClientesController.create
 );
 
@@ -76,7 +96,27 @@ router.put(
   "/:id",
   verificarToken,
   esAdmin,
-  upload.single("foto_paquete"),
+  (req, res, next) => {
+    upload.single("foto_paquete")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        // Error de multer (tamaño, etc.)
+        return res.status(400).json({
+          ok: false,
+          message: err.code === 'LIMIT_FILE_SIZE' 
+            ? 'El archivo excede el tamaño máximo permitido (5 MB)' 
+            : 'Error al subir el archivo',
+          detalle: err.message
+        });
+      } else if (err) {
+        // Error personalizado (tipo de archivo)
+        return res.status(400).json({
+          ok: false,
+          message: err.message
+        });
+      }
+      next();
+    });
+  },
   PaquetesClientesController.update
 );
 

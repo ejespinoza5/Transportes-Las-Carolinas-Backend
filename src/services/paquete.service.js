@@ -22,17 +22,17 @@ getById: (id) => {
 
   create: async (data) => {
     try {
-      // Verificar si ya existe un paquete activo con esa guía
+      // Verificar si ya existe un paquete activo con esa guÃ­a
       const paqueteExistente = await PaqueteModel.getByGuiaActivo(data.Guia);
       
       if (paqueteExistente) {
         throw {
           status: 400,
-          message: "Ya existe un paquete activo con ese número de guía."
+          message: "Ya existe un paquete activo con ese nÃºmero de guÃ­a."
         };
       }
 
-      // Agregar fecha y hora de registro automáticamente en zona horaria Ecuador (GMT-5)
+      // Agregar fecha y hora de registro automÃ¡ticamente en zona horaria Ecuador (GMT-5)
       const now = new Date();
       const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
       const year = ecuadorTime.getFullYear();
@@ -71,7 +71,7 @@ getById: (id) => {
               await HistorialEstadosModel.create({
                 id_Paquete: id_Paquete,
                 id_estado: estado.id_estado,
-                observaciones: estado.id_estado == data.id_estado ? 'Estado inicial' : 'Estado registrado automáticamente',
+                observaciones: estado.id_estado == data.id_estado ? 'Estado inicial' : 'Estado registrado automÃ¡ticamente',
                 fecha_cambio: fechaRegistro,
                 hora_cambio: horaRegistro,
                 usuario: data.usuario || null
@@ -89,15 +89,15 @@ getById: (id) => {
         throw error;
       }
 
-      // 🟥 Error de guía duplicada (por si acaso hay UNIQUE en BD)
+      // ðŸŸ¥ Error de guÃ­a duplicada (por si acaso hay UNIQUE en BD)
       if (error.code === "ER_DUP_ENTRY") {
         throw {
           status: 400,
-          message: "La guía ingresada ya existe. Use otra."
+          message: "La guÃ­a ingresada ya existe. Use otra."
         };
       }
 
-      // 🟧 Otros errores de MySQL
+      // ðŸŸ§ Otros errores de MySQL
       throw {
         status: 500,
         message: "Error interno del servidor.",
@@ -108,21 +108,21 @@ getById: (id) => {
 
   update: async (id, data) => {
     try {
-      // Verificar si ya existe otro paquete activo con esa guía
+      // Verificar si ya existe otro paquete activo con esa guÃ­a
       const paqueteExistente = await PaqueteModel.getByGuiaActivo(data.Guia);
       
       // Si existe y NO es el mismo que estamos actualizando
       if (paqueteExistente && paqueteExistente.id_Paquete != id) {
         throw {
           status: 400,
-          message: "Ya existe un paquete activo con ese número de guía."
+          message: "Ya existe un paquete activo con ese nÃºmero de guÃ­a."
         };
       }
 
       // Actualizar el paquete
       const result = await PaqueteModel.update(id, data);
 
-      // Si se actualizó el peso, sincronizar con paquetes_clientes
+      // Si se actualizÃ³ el peso, sincronizar con paquetes_clientes
       if (data.Peso_LB !== undefined && data.Peso_LB !== null) {
         await PaquetesClientesModel.actualizarPesoPorPaquete(id, data.Peso_LB);
       }
@@ -135,15 +135,15 @@ getById: (id) => {
         throw error;
       }
 
-      // 🟥 Error de guía duplicada en base de datos
+      // ðŸŸ¥ Error de guÃ­a duplicada en base de datos
       if (error.code === "ER_DUP_ENTRY") {
         throw {
           status: 400,
-          message: "El número de guía ya está registrado en el sistema (puede estar inactivo). Use otro número de guía."
+          message: "El nÃºmero de guÃ­a ya estÃ¡ registrado en el sistema (puede estar inactivo). Use otro nÃºmero de guÃ­a."
         };
       }
 
-      // 🟧 Otros errores de MySQL
+      // ðŸŸ§ Otros errores de MySQL
       throw {
         status: 500,
         message: "Error interno del servidor.",
@@ -185,7 +185,7 @@ getById: (id) => {
       usuario: data.usuario || null
     });
 
-    // 5. Actualizar observaciones en paquetes_clientes (el nuevo estado es el más reciente)
+    // 5. Actualizar observaciones en paquetes_clientes (el nuevo estado es el mÃ¡s reciente)
     const observacionesSync = data.observaciones !== undefined ? data.observaciones : null;
     await PaquetesClientesModel.actualizarObservacionesPorPaquete(id, observacionesSync);
 
@@ -200,10 +200,10 @@ getById: (id) => {
   }
 },
 
-  // Actualizar estado de múltiples paquetes
+  // Actualizar estado de mÃºltiples paquetes
   updateEstadoMultiple: async (ids, data) => {
     try {
-      // Validación básica
+      // ValidaciÃ³n bÃ¡sica
       if (!Array.isArray(ids) || ids.length === 0) {
         throw { status: 400, message: "Debe proporcionar un array de IDs" };
       }
@@ -284,7 +284,7 @@ getByGuiaFull: async (guia) => {
   if (!rows || rows.length === 0) {
     throw {
       status: 404,
-      message: "No se encontró un paquete con esa guía."
+      message: "No se encontrÃ³ un paquete con esa guÃ­a."
     };
   }
 
@@ -297,7 +297,9 @@ getByGuiaFull: async (guia) => {
     Remitente: rows[0].Remitente,
     Peso_LB: rows[0].Peso_LB,
     Courier: rows[0].Courier,
-    guia_tramaco: rows[0].guia_tramaco
+    guia_tramaco: rows[0].guia_tramaco,
+    id_estado_actual: rows[0].id_estado_paquete,
+    orden_maximo_sistema: rows[0].orden_maximo_sistema
   };
 
   // --- Historial agrupado ---
@@ -320,10 +322,10 @@ getByGuiaFull: async (guia) => {
     return PaqueteModel.deactivate(id);
   },
 
-  // Desactivar múltiples paquetes
+  // Desactivar mÃºltiples paquetes
   deactivateMultiple: async (ids) => {
     try {
-      // Validación básica
+      // ValidaciÃ³n bÃ¡sica
       if (!Array.isArray(ids) || ids.length === 0) {
         throw { status: 400, message: "Debe proporcionar un array de IDs" };
       }
@@ -345,9 +347,9 @@ getByGuiaFull: async (guia) => {
             continue;
           }
 
-          // Verificar si ya está inactivo
+          // Verificar si ya estÃ¡ inactivo
           if (paquete.Activo === false || paquete.Activo === 0) {
-            resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): ya está inactivo`);
+            resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): ya estÃ¡ inactivo`);
             continue;
           }
 
@@ -379,10 +381,10 @@ getByGuiaFull: async (guia) => {
     }
   },
 
-  // Método para importación: actualiza si existe, crea si no existe
+  // MÃ©todo para importaciÃ³n: actualiza si existe, crea si no existe
   upsert: async (data) => {
     try {
-      // Agregar fecha y hora de registro automáticamente en zona horaria Ecuador (GMT-5)
+      // Agregar fecha y hora de registro automÃ¡ticamente en zona horaria Ecuador (GMT-5)
       const now = new Date();
       const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
       const year = ecuadorTime.getFullYear();
@@ -404,14 +406,14 @@ getByGuiaFull: async (guia) => {
         estado: 'activo' // Reactivar si estaba inactivo
       };
 
-      // Buscar si ya existe un paquete con esa guía (activo o inactivo)
+      // Buscar si ya existe un paquete con esa guÃ­a (activo o inactivo)
       const paqueteExistente = await PaqueteModel.getByGuia(data.Guia);
       
       if (paqueteExistente) {
         // Si existe (activo o inactivo), actualizar y reactivar
         await PaqueteModel.update(paqueteExistente.id_Paquete, paqueteData);
         
-        // Si tiene estado inicial, actualizar el historial también
+        // Si tiene estado inicial, actualizar el historial tambiÃ©n
         if (data.id_estado && data.id_estado > 0) {
           // Obtener todos los estados activos ordenados por su campo 'orden'
           const estadosActivos = await db.query(
@@ -433,7 +435,7 @@ getByGuiaFull: async (guia) => {
                 await HistorialEstadosModel.create({
                   id_Paquete: paqueteExistente.id_Paquete,
                   id_estado: estado.id_estado,
-                  observaciones: estado.id_estado == data.id_estado ? 'Estado inicial al reimportar' : 'Estado registrado automáticamente',
+                  observaciones: estado.id_estado == data.id_estado ? 'Estado inicial al reimportar' : 'Estado registrado automÃ¡ticamente',
                   fecha_cambio: fechaRegistro,
                   hora_cambio: horaRegistro,
                   usuario: data.usuario || null
@@ -466,7 +468,7 @@ getByGuiaFull: async (guia) => {
                 await HistorialEstadosModel.create({
                   id_Paquete: id,
                   id_estado: estado.id_estado,
-                  observaciones: estado.id_estado == data.id_estado ? 'Estado inicial' : 'Estado registrado automáticamente',
+                  observaciones: estado.id_estado == data.id_estado ? 'Estado inicial' : 'Estado registrado automÃ¡ticamente',
                   fecha_cambio: fechaRegistro,
                   hora_cambio: horaRegistro,
                   usuario: data.usuario || null

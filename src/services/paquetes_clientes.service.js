@@ -32,10 +32,48 @@ export const PaquetesClientesService = {
       throw new Error("El cliente no existe en el sistema");
     }
 
-    // Verificar si el paquete ya está asignado
-    const yaAsignado = await PaquetesClientesModel.isPaqueteAsignado(data.id_Paquete);
-    if (yaAsignado) {
-      throw new Error("Este paquete ya está asignado a un cliente");
+    // Verificar si existe una asignación inactiva del mismo paquete y cliente
+    const asignacionInactiva = await PaquetesClientesModel.buscarAsignacionInactiva(
+      data.id_Paquete, 
+      data.id_cliente
+    );
+
+    if (asignacionInactiva) {
+      // Si existe una asignación inactiva, reactivarla con los nuevos datos
+      await PaquetesClientesModel.reactivarAsignacion(asignacionInactiva.id_asignacion, data);
+      
+      // Preparar datos para actualizar en la tabla paquete
+      const datosActualizarPaquete = {};
+      
+      if (data.peso_lb !== undefined && data.peso_lb !== null) {
+        datosActualizarPaquete.Peso_LB = data.peso_lb;
+      }
+      
+      if (Object.keys(datosActualizarPaquete).length > 0) {
+        await PaqueteModel.update(data.id_Paquete, datosActualizarPaquete);
+      }
+
+      if (data.observaciones !== undefined && data.observaciones !== null) {
+        const ultimoEstado = await HistorialEstadosModel.getUltimoEstadoPaquete(data.id_Paquete);
+        if (ultimoEstado) {
+          await HistorialEstadosModel.update(ultimoEstado.id_historial, {
+            observaciones: data.observaciones
+          });
+        }
+      }
+      
+      return asignacionInactiva.id_asignacion;
+    }
+
+    // Verificar si el paquete ya está asignado activamente
+    const asignacionActiva = await PaquetesClientesModel.isPaqueteAsignado(data.id_Paquete);
+    if (asignacionActiva) {
+      // Verificar si está asignado al mismo cliente
+      if (asignacionActiva.id_cliente === data.id_cliente) {
+        throw new Error("Este paquete ya está asignado activamente a este cliente.");
+      } else {
+        throw new Error("Este paquete ya está asignado a otro cliente");
+      }
     }
 
     // Preparar datos para actualizar en la tabla paquete

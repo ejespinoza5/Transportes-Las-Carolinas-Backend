@@ -15,7 +15,9 @@ export const PaquetesClientesModel = {
        INNER JOIN paquete p ON pc.id_Paquete = p.id_Paquete
        INNER JOIN casilleros_clientes cc ON pc.id_cliente = cc.id
        LEFT JOIN estados e ON p.id_estado = e.id_estado
-       WHERE pc.estado = 'activo'
+       WHERE pc.estado = 'activo' 
+         AND p.estado = 'activo'
+         AND cc.estado = 'activo'
        ORDER BY pc.fecha_asignacion DESC, pc.hora_asignacion DESC`
     );
     return rows;
@@ -34,7 +36,10 @@ export const PaquetesClientesModel = {
        INNER JOIN paquete p ON pc.id_Paquete = p.id_Paquete
        INNER JOIN casilleros_clientes cc ON pc.id_cliente = cc.id
        LEFT JOIN estados e ON p.id_estado = e.id_estado
-       WHERE pc.id_cliente = ? AND pc.estado = 'activo'
+       WHERE pc.id_cliente = ? 
+         AND pc.estado = 'activo'
+         AND p.estado = 'activo'
+         AND cc.estado = 'activo'
        ORDER BY pc.fecha_asignacion DESC, pc.hora_asignacion DESC`,
       [id_cliente]
     );
@@ -55,7 +60,10 @@ export const PaquetesClientesModel = {
        INNER JOIN paquete p ON pc.id_Paquete = p.id_Paquete
        INNER JOIN casilleros_clientes cc ON pc.id_cliente = cc.id
        LEFT JOIN estados e ON p.id_estado = e.id_estado
-       WHERE pc.id_asignacion = ?`,
+       WHERE pc.id_asignacion = ?
+         AND pc.estado = 'activo'
+         AND p.estado = 'activo'
+         AND cc.estado = 'activo'`,
       [id_asignacion]
     );
     return rows[0];
@@ -114,7 +122,7 @@ export const PaquetesClientesModel = {
 
   // Verificar si un paquete ya está asignado a un cliente
   isPaqueteAsignado: async (id_Paquete, excluir_id_asignacion = null) => {
-    let query = `SELECT id_asignacion FROM paquetes_clientes 
+    let query = `SELECT id_asignacion, id_cliente FROM paquetes_clientes 
        WHERE id_Paquete = ? AND estado = 'activo'`;
     let params = [id_Paquete];
     
@@ -125,7 +133,7 @@ export const PaquetesClientesModel = {
     }
     
     const [rows] = await db.query(query, params);
-    return rows.length > 0;
+    return rows.length > 0 ? rows[0] : null;
   },
 
   // Obtener la foto anterior para eliminarla al actualizar
@@ -170,6 +178,50 @@ export const PaquetesClientesModel = {
       `UPDATE paquetes_clientes SET observaciones = ? WHERE id_Paquete = ? AND estado = 'activo'`,
       [observaciones, id_Paquete]
     );
+    return result.affectedRows;
+  },
+
+  // Buscar asignación inactiva del mismo paquete y cliente
+  buscarAsignacionInactiva: async (id_Paquete, id_cliente) => {
+    const [rows] = await db.query(
+      `SELECT id_asignacion, peso_lb, foto_paquete, observaciones 
+       FROM paquetes_clientes 
+       WHERE id_Paquete = ? AND id_cliente = ? AND estado = 'inactivo'`,
+      [id_Paquete, id_cliente]
+    );
+    return rows[0] || null;
+  },
+
+  // Reactivar una asignación inactiva con nuevos datos
+  reactivarAsignacion: async (id_asignacion, data) => {
+    const { peso_lb, foto_paquete, observaciones } = data;
+    
+    let query = `UPDATE paquetes_clientes SET estado = 'activo', peso_lb = ?, observaciones = ?`;
+    let params = [peso_lb, observaciones];
+    
+    // Solo actualizar foto si se proporciona una nueva
+    if (foto_paquete !== null && foto_paquete !== undefined) {
+      query += `, foto_paquete = ?`;
+      params.push(foto_paquete);
+    }
+    
+    // Agregar fecha y hora de asignación actualizadas
+    const now = new Date();
+    const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+    const year = ecuadorTime.getFullYear();
+    const month = String(ecuadorTime.getMonth() + 1).padStart(2, '0');
+    const day = String(ecuadorTime.getDate()).padStart(2, '0');
+    const hours = String(ecuadorTime.getHours()).padStart(2, '0');
+    const minutes = String(ecuadorTime.getMinutes()).padStart(2, '0');
+    const seconds = String(ecuadorTime.getSeconds()).padStart(2, '0');
+    
+    const fechaAsignacion = `${year}-${month}-${day}`;
+    const horaAsignacion = `${hours}:${minutes}:${seconds}`;
+    
+    query += `, fecha_asignacion = ?, hora_asignacion = ? WHERE id_asignacion = ?`;
+    params.push(fechaAsignacion, horaAsignacion, id_asignacion);
+    
+    const [result] = await db.query(query, params);
     return result.affectedRows;
   }
 };
