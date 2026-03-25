@@ -18,13 +18,13 @@ async function crearAdministrador() {
     `);
     console.log('‚úÖ Roles verificados');
 
-    // Verificar si ya existe un administrador
+    // Contar administradores existentes
     const [admins] = await db.execute(
-      'SELECT id_usuario, email FROM usuarios WHERE id_rol = 1 LIMIT 1'
+      'SELECT id_usuario FROM usuarios WHERE id_rol = 1'
     );
 
-    if (admins.length > 0) {
-      console.log('‚ö†Ô∏è  Administrador ya existe:', admins[0].email);
+    if (admins.length >= 2) {
+      console.log('‚ö†Ô∏è  Ya existen 2 administradores. No se crear√° otro.');
       process.exit(0);
     }
 
@@ -43,14 +43,17 @@ async function crearAdministrador() {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
-    // Insertar el administrador con email verificado
+    // Insertar nuevo administrador
     await db.execute(
-      'INSERT INTO usuarios (email, password, id_rol, estado, email_verificado) VALUES (?, ?, 1, "activo", 1)',
+      `INSERT INTO usuarios 
+       (email, password, id_rol, estado, email_verificado) 
+       VALUES (?, ?, 1, 'activo', 1)`,
       [ADMIN_EMAIL, passwordHash]
     );
 
     console.log('‚úÖ Administrador creado:', ADMIN_EMAIL);
-    
+    console.log(`Ì†ΩÌ±• Total administradores ahora: ${admins.length + 1}`);
+
     process.exit(0);
   } catch (error) {
     console.error('‚ùå Error:', error.message);

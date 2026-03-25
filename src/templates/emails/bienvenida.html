@@ -112,6 +112,58 @@
       margin-top: 15px;
       line-height: 1.8;
     }
+
+    /* ── NUEVA SECCIÓN: Dirección USA ── */
+    .address-section {
+      background: linear-gradient(135deg, #f0f4ff 0%, #e9ecf5 100%);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 25px 0;
+      border-left: 4px solid #164d8a;
+    }
+    .address-title {
+      color: #0A2A66;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .address-desc {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 18px;
+      line-height: 1.8;
+    }
+    .address-box {
+      background: #ffffff;
+      border: 2px dashed #0A2A66;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+    .address-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0A2A66;
+      margin-bottom: 8px;
+    }
+    .address-lines {
+      font-size: 15px;
+      color: #333;
+      line-height: 2;
+      margin: 0;
+    }
+    .address-warning {
+      color: #888;
+      font-size: 13px;
+      margin-top: 14px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    /* ── fin sección dirección ── */
+
     .info-section {
       background: #f8f9fc;
       border-radius: 12px;
@@ -260,6 +312,30 @@
         </div>
       </div>
 
+      <!-- ── DIRECCIÓN DE ENVÍO EN USA ── -->
+      <div class="address-section">
+        <div class="address-title">
+          <span>📦</span> Tu Dirección de Envío en Estados Unidos
+        </div>
+        <p class="address-desc">
+          Usa esta dirección cuando realices tus compras en tiendas americanas.
+          <strong>Es obligatorio incluir tu número de casillero</strong> junto a tu nombre
+          para que podamos identificar tu paquete correctamente.
+        </p>
+        <div class="address-box">
+          <p class="address-name">{{NOMBRE_COMPLETO}} – {{COD_CASILLERO}}</p>
+          <p class="address-lines">
+            359 Robert Grissom Pkwy<br>
+            Myrtle Beach, SC 29577<br>
+            United States
+          </p>
+        </div>
+        <p class="address-warning">
+          ⚠️ Recuerda siempre incluir tu casillero <strong>{{COD_CASILLERO}}</strong> junto a tu nombre al momento de hacer tus compras.
+        </p>
+      </div>
+      <!-- ── fin dirección ── -->
+
       <div class="datos-cliente">
         <div class="dato-row">
           <div class="dato-label">Nombre:</div>
@@ -285,7 +361,7 @@
 
       <div class="info-section">
         <div class="info-title">
-          <span class="info-icon"></span>
+          <span class="info-icon">ℹ️</span>
           ¿Cómo funciona tu casillero?
         </div>
         <ul class="info-list">
@@ -297,7 +373,7 @@
 
       <div class="info-section">
         <div class="info-title">
-          <span class="info-icon"></span>
+          <span class="info-icon">✅</span>
           Próximos pasos
         </div>
         <ul class="info-list">

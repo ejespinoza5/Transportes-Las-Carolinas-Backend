@@ -32,7 +32,7 @@ getById: (id) => {
         };
       }
 
-      // Agregar fecha y hora de registro automÃ¡ticamente en zona horaria Ecuador (GMT-5)
+  // Agregar fecha y hora de registro automáticamente en zona horaria Ecuador (GMT-5)
       const now = new Date();
       const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
       const year = ecuadorTime.getFullYear();
@@ -288,7 +288,7 @@ getByGuiaFull: async (guia) => {
     };
   }
 
-  // --- Datos únicos del paquete (tomamos la primera fila) ---
+  // --- Datos �nicos del paquete (tomamos la primera fila) ---
   const paquete = {
     id_Paquete: rows[0].id_Paquete,
     Servicio: rows[0].Servicio,
@@ -384,7 +384,11 @@ getByGuiaFull: async (guia) => {
   // MÃ©todo para importaciÃ³n: actualiza si existe, crea si no existe
   upsert: async (data) => {
     try {
+<<<<<<< HEAD
       // Agregar fecha y hora de registro automÃ¡ticamente en zona horaria Ecuador (GMT-5)
+=======
+      // Agregar fecha y hora de registro automáticamente en zona horaria Ecuador (GMT-5)
+>>>>>>> 1d6c80f (correo bienvenida)
       const now = new Date();
       const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
       const year = ecuadorTime.getFullYear();
