@@ -384,11 +384,6 @@ getByGuiaFull: async (guia) => {
   // MÃ©todo para importaciÃ³n: actualiza si existe, crea si no existe
   upsert: async (data) => {
     try {
-<<<<<<< HEAD
-      // Agregar fecha y hora de registro automÃ¡ticamente en zona horaria Ecuador (GMT-5)
-=======
-      // Agregar fecha y hora de registro automáticamente en zona horaria Ecuador (GMT-5)
->>>>>>> 1d6c80f (correo bienvenida)
       const now = new Date();
       const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
       const year = ecuadorTime.getFullYear();
