@@ -242,6 +242,7 @@ WHERE p.Guia = ?`,
           p.Courier,
           p.guia_tramaco,
           p.id_estado as id_estado_paquete,
+          ea.orden AS orden_actual,
 
           e.id_estado,
           e.nombre_estado AS estado,
@@ -254,7 +255,9 @@ WHERE p.Guia = ?`,
           (SELECT MAX(orden) FROM estados WHERE estado = 'activo') as orden_maximo_sistema
 
       FROM paquete p
-      LEFT JOIN historial_estados h 
+      LEFT JOIN estados ea
+             ON p.id_estado = ea.id_estado
+      LEFT JOIN historial_estados h
              ON p.id_Paquete = h.id_Paquete 
             AND h.estado = 'activo'
       LEFT JOIN estados e 

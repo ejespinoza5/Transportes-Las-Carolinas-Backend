@@ -175,7 +175,10 @@ getById: (id) => {
       throw { status: 400, message: "No se pudo actualizar el estado" };
     }
 
-    // 4. Registrar historial
+    // 4. Si el paquete retrocede de estado, desactivar entradas posteriores del historial
+    await HistorialEstadosModel.deactivatePosteriores(id, data.id_estado);
+
+    // 5. Registrar historial
     await HistorialEstadosModel.create({
       id_Paquete: id,
       id_estado: data.id_estado,
@@ -185,7 +188,7 @@ getById: (id) => {
       usuario: data.usuario || null
     });
 
-    // 5. Actualizar observaciones en paquetes_clientes (el nuevo estado es el mÃ¡s reciente)
+    // 6. Actualizar observaciones en paquetes_clientes (el nuevo estado es el mÃ¡s reciente)
     const observacionesSync = data.observaciones !== undefined ? data.observaciones : null;
     await PaquetesClientesModel.actualizarObservacionesPorPaquete(id, observacionesSync);
 
@@ -244,6 +247,9 @@ getById: (id) => {
           const result = await PaqueteModel.updateEstado(id, data.id_estado);
 
           if (result.affectedRows > 0) {
+            // Si el paquete retrocede de estado, desactivar entradas posteriores del historial
+            await HistorialEstadosModel.deactivatePosteriores(id, data.id_estado);
+
             // Registrar en historial
             await HistorialEstadosModel.create({
               id_Paquete: id,
@@ -303,7 +309,18 @@ getByGuiaFull: async (guia) => {
   };
 
   // --- Historial agrupado ---
-  const historial = rows
+  // Solo mostrar estados hasta el estado ACTUAL del paquete. Si el paquete
+  // retrocedió de estado (reimportación o cambio manual), el historial puede
+  // conservar entradas de estados posteriores que no deben mostrarse.
+  const ordenActual = rows[0].orden_actual;
+  // Si un estado aparece varias veces (paquete que retrocedió y volvió a avanzar),
+  // quedarse solo con la entrada más reciente de cada estado.
+  const ultimoPorEstado = new Map();
+  for (const r of rows) {
+    if (ordenActual != null && r.orden != null && r.orden > ordenActual) continue;
+    ultimoPorEstado.set(r.id_estado ?? `null-${ultimoPorEstado.size}`, r); // rows vienen en orden cronológico
+  }
+  const historial = [...ultimoPorEstado.values()]
     .map(r => ({
       orden: r.orden,
       id_estado: r.id_estado,
@@ -409,6 +426,11 @@ getByGuiaFull: async (guia) => {
       const paqueteExistente = await PaqueteModel.getByGuia(data.Guia);
       
       if (paqueteExistente) {
+        // Si el import no trae estado, no borrar el estado actual del paquete
+        if (!data.id_estado) {
+          delete paqueteData.id_estado;
+        }
+
         // Si existe (activo o inactivo), actualizar y reactivar
         await PaqueteModel.update(paqueteExistente.id_Paquete, paqueteData);
         
@@ -424,8 +446,18 @@ getByGuiaFull: async (guia) => {
           const estadoActual = estados.find(e => e.id_estado == data.id_estado);
           
           if (estadoActual) {
-            // Obtener estados ya registrados para este paquete
-            const historialExistente = await HistorialEstadosModel.getByPaqueteAll(paqueteExistente.id_Paquete);
+            // Desactivar entradas del historial de estados POSTERIORES al nuevo estado
+            // (si no, el tracking mostraría estados que el paquete ya no tiene)
+            await db.query(
+              `UPDATE historial_estados h
+               JOIN estados e ON h.id_estado = e.id_estado
+               SET h.estado = 'inactivo'
+               WHERE h.id_Paquete = ? AND h.estado = 'activo' AND e.orden > ?`,
+              [paqueteExistente.id_Paquete, estadoActual.orden]
+            );
+
+            // Obtener estados ya registrados (activos) para este paquete
+            const historialExistente = await HistorialEstadosModel.getByPaquete(paqueteExistente.id_Paquete);
             const estadosRegistrados = historialExistente.map(h => h.id_estado);
             
             // Registrar estados que faltan hasta el orden del estado actual

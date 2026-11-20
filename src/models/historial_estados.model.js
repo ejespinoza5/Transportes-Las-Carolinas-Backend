@@ -129,6 +129,20 @@ export const HistorialEstadosModel = {
     return result;
   },
 
+  // Desactivar entradas del historial cuyo estado tenga un orden MAYOR al indicado
+  // (se usa cuando un paquete retrocede de estado)
+  deactivatePosteriores: async (id_Paquete, id_estado) => {
+    const [result] = await db.query(
+      `UPDATE historial_estados h
+       JOIN estados e ON h.id_estado = e.id_estado
+       SET h.estado = 'inactivo'
+       WHERE h.id_Paquete = ? AND h.estado = 'activo'
+         AND e.orden > (SELECT orden FROM (SELECT orden FROM estados WHERE id_estado = ?) x)`,
+      [id_Paquete, id_estado]
+    );
+    return result;
+  },
+
   // Obtener el último estado de un paquete (más reciente)
   getUltimoEstadoPaquete: async (id_Paquete) => {
     const [rows] = await db.query(
