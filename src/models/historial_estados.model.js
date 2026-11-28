@@ -45,8 +45,8 @@ export const HistorialEstadosModel = {
   },
 
   // Obtener historial por paquete
-  getByPaquete: async (id_Paquete) => {
-    const [rows] = await db.query(
+  getByPaquete: async (id_Paquete, conn = db) => {
+    const [rows] = await conn.query(
       `SELECT h.id_historial, h.id_Paquete, h.id_estado, e.nombre_estado,
       h.observaciones, h.fecha_cambio, h.hora_cambio, h.usuario, h.estado
       FROM historial_estados h
@@ -58,7 +58,7 @@ export const HistorialEstadosModel = {
     return rows;
   },
 
-  create: async (data) => {
+  create: async (data, conn = db) => {
     const sql = `
       INSERT INTO historial_estados
       (id_Paquete, id_estado, observaciones, fecha_cambio, hora_cambio, usuario)
@@ -74,7 +74,7 @@ export const HistorialEstadosModel = {
       data.usuario || null
     ];
 
-    const [result] = await db.query(sql, params);
+    const [result] = await conn.query(sql, params);
     return result.insertId;
   },
 
@@ -131,8 +131,8 @@ export const HistorialEstadosModel = {
 
   // Desactivar entradas del historial cuyo estado tenga un orden MAYOR al indicado
   // (se usa cuando un paquete retrocede de estado)
-  deactivatePosteriores: async (id_Paquete, id_estado) => {
-    const [result] = await db.query(
+  deactivatePosteriores: async (id_Paquete, id_estado, conn = db) => {
+    const [result] = await conn.query(
       `UPDATE historial_estados h
        JOIN estados e ON h.id_estado = e.id_estado
        SET h.estado = 'inactivo'

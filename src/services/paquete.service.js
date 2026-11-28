@@ -4,6 +4,22 @@ import { PaquetesClientesModel } from "../models/paquetes_clientes.model.js";
 import { AuditoriaPaquetesModel } from "../models/auditoria_paquetes.model.js";
 import { db } from "../config/db.js";
 
+// Ejecuta varias operaciones como una sola: o se guardan todas o ninguna.
+const enTransaccion = async (fn) => {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const resultado = await fn(conn);
+    await conn.commit();
+    return resultado;
+  } catch (error) {
+    try { await conn.rollback(); } catch { /* conexión ya cerrada */ }
+    throw error;
+  } finally {
+    conn.release();
+  }
+};
+
 export const PaqueteService = {
   getAll: () => {
     return PaqueteModel.getAll();
@@ -52,19 +68,21 @@ getById: (id) => {
         Hora_registro: horaRegistro
       };
 
-      const id_Paquete = await PaqueteModel.create(paqueteData);
+      // Paquete + historial inicial en una sola transacción
+      const id_Paquete = await enTransaccion(async (conn) => {
+      const id_Paquete = await PaqueteModel.create(paqueteData, conn);
 
       // Si tiene estado inicial, registrar todos los estados previos en el historial
       if (data.id_estado && data.id_estado > 0) {
         // Obtener todos los estados activos ordenados por su campo 'orden'
-        const estadosActivos = await db.query(
+        const estadosActivos = await conn.query(
           'SELECT id_estado, orden FROM estados WHERE estado = "activo" ORDER BY orden ASC'
         );
         const estados = estadosActivos[0];
-        
+
         // Encontrar el orden del estado actual
         const estadoActual = estados.find(e => e.id_estado == data.id_estado);
-        
+
         if (estadoActual) {
           // Registrar todos los estados hasta el orden del estado actual
           for (const estado of estados) {
@@ -76,11 +94,14 @@ getById: (id) => {
                 fecha_cambio: fechaRegistro,
                 hora_cambio: horaRegistro,
                 usuario: data.usuario || null
-              });
+              }, conn);
             }
           }
         }
       }
+
+      return id_Paquete;
+      });
 
       return id_Paquete;
 
@@ -169,29 +190,32 @@ getById: (id) => {
       };
     }
 
-    // 3. Actualizar el estado desde el modelo
-    const result = await PaqueteModel.updateEstado(id, data.id_estado);
+    // Pasos 3 a 6 en una sola transacción: o se guarda todo o nada
+    await enTransaccion(async (conn) => {
+      // 3. Actualizar el estado desde el modelo
+      const result = await PaqueteModel.updateEstado(id, data.id_estado, conn);
 
-    if (result.affectedRows === 0) {
-      throw { status: 400, message: "No se pudo actualizar el estado" };
-    }
+      if (result.affectedRows === 0) {
+        throw { status: 400, message: "No se pudo actualizar el estado" };
+      }
 
-    // 4. Si el paquete retrocede de estado, desactivar entradas posteriores del historial
-    await HistorialEstadosModel.deactivatePosteriores(id, data.id_estado);
+      // 4. Si el paquete retrocede de estado, desactivar entradas posteriores del historial
+      await HistorialEstadosModel.deactivatePosteriores(id, data.id_estado, conn);
 
-    // 5. Registrar historial
-    await HistorialEstadosModel.create({
-      id_Paquete: id,
-      id_estado: data.id_estado,
-      observaciones: data.observaciones || null,
-      fecha_cambio: data.fecha_cambio,
-      hora_cambio: data.hora_cambio,
-      usuario: data.usuario || null
+      // 5. Registrar historial
+      await HistorialEstadosModel.create({
+        id_Paquete: id,
+        id_estado: data.id_estado,
+        observaciones: data.observaciones || null,
+        fecha_cambio: data.fecha_cambio,
+        hora_cambio: data.hora_cambio,
+        usuario: data.usuario || null
+      }, conn);
+
+      // 6. Actualizar observaciones en paquetes_clientes (el nuevo estado es el mÃ¡s reciente)
+      const observacionesSync = data.observaciones !== undefined ? data.observaciones : null;
+      await PaquetesClientesModel.actualizarObservacionesPorPaquete(id, observacionesSync, conn);
     });
-
-    // 6. Actualizar observaciones en paquetes_clientes (el nuevo estado es el mÃ¡s reciente)
-    const observacionesSync = data.observaciones !== undefined ? data.observaciones : null;
-    await PaquetesClientesModel.actualizarObservacionesPorPaquete(id, observacionesSync);
 
     return { ok: true, message: "Estado actualizado y registrado en historial" };
 
@@ -244,12 +268,13 @@ getById: (id) => {
             continue;
           }
 
-          // Actualizar estado
-          const result = await PaqueteModel.updateEstado(id, data.id_estado);
+          // Actualizar estado + historial en una sola transacción por paquete
+          const actualizado = await enTransaccion(async (conn) => {
+            const result = await PaqueteModel.updateEstado(id, data.id_estado, conn);
+            if (result.affectedRows === 0) return false;
 
-          if (result.affectedRows > 0) {
             // Si el paquete retrocede de estado, desactivar entradas posteriores del historial
-            await HistorialEstadosModel.deactivatePosteriores(id, data.id_estado);
+            await HistorialEstadosModel.deactivatePosteriores(id, data.id_estado, conn);
 
             // Registrar en historial
             await HistorialEstadosModel.create({
@@ -259,8 +284,11 @@ getById: (id) => {
               fecha_cambio: data.fecha_cambio,
               hora_cambio: data.hora_cambio,
               usuario: data.usuario || null
-            });
+            }, conn);
+            return true;
+          });
 
+          if (actualizado) {
             resultados.actualizados++;
             resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): actualizado`);
           }
@@ -433,6 +461,8 @@ getByGuiaFull: async (guia) => {
         estado: 'activo' // Reactivar si estaba inactivo
       };
 
+      // Todo el upsert (paquete + historial) en una sola transacción
+      return await enTransaccion(async (conn) => {
       // Buscar si ya existe un paquete con esa guÃ­a (activo o inactivo)
       const paqueteExistente = await PaqueteModel.getByGuia(data.Guia);
       
@@ -443,12 +473,12 @@ getByGuiaFull: async (guia) => {
         }
 
         // Si existe (activo o inactivo), actualizar y reactivar
-        await PaqueteModel.update(paqueteExistente.id_Paquete, paqueteData);
+        await PaqueteModel.update(paqueteExistente.id_Paquete, paqueteData, conn);
         
         // Si tiene estado inicial, actualizar el historial tambiÃ©n
         if (data.id_estado && data.id_estado > 0) {
           // Obtener todos los estados activos ordenados por su campo 'orden'
-          const estadosActivos = await db.query(
+          const estadosActivos = await conn.query(
             'SELECT id_estado, orden FROM estados WHERE estado = "activo" ORDER BY orden ASC'
           );
           const estados = estadosActivos[0];
@@ -459,7 +489,7 @@ getByGuiaFull: async (guia) => {
           if (estadoActual) {
             // Desactivar entradas del historial de estados POSTERIORES al nuevo estado
             // (si no, el tracking mostraría estados que el paquete ya no tiene)
-            await db.query(
+            await conn.query(
               `UPDATE historial_estados h
                JOIN estados e ON h.id_estado = e.id_estado
                SET h.estado = 'inactivo'
@@ -468,7 +498,7 @@ getByGuiaFull: async (guia) => {
             );
 
             // Obtener estados ya registrados (activos) para este paquete
-            const historialExistente = await HistorialEstadosModel.getByPaquete(paqueteExistente.id_Paquete);
+            const historialExistente = await HistorialEstadosModel.getByPaquete(paqueteExistente.id_Paquete, conn);
             const estadosRegistrados = historialExistente.map(h => h.id_estado);
             
             // Registrar estados que faltan hasta el orden del estado actual
@@ -481,7 +511,7 @@ getByGuiaFull: async (guia) => {
                   fecha_cambio: fechaRegistro,
                   hora_cambio: horaRegistro,
                   usuario: data.usuario || null
-                });
+                }, conn);
               }
             }
           }
@@ -490,12 +520,12 @@ getByGuiaFull: async (guia) => {
         return { action: 'updated', id: paqueteExistente.id_Paquete };
       } else {
         // Si no existe, crear
-        const id = await PaqueteModel.create(paqueteData);
+        const id = await PaqueteModel.create(paqueteData, conn);
         
         // Si tiene estado inicial, registrar todos los estados previos en el historial
         if (data.id_estado && data.id_estado > 0) {
           // Obtener todos los estados activos ordenados por su campo 'orden'
-          const estadosActivos = await db.query(
+          const estadosActivos = await conn.query(
             'SELECT id_estado, orden FROM estados WHERE estado = "activo" ORDER BY orden ASC'
           );
           const estados = estadosActivos[0];
@@ -514,7 +544,7 @@ getByGuiaFull: async (guia) => {
                   fecha_cambio: fechaRegistro,
                   hora_cambio: horaRegistro,
                   usuario: data.usuario || null
-                });
+                }, conn);
               }
             }
           }
@@ -522,6 +552,7 @@ getByGuiaFull: async (guia) => {
         
         return { action: 'created', id };
       }
+      });
 
     } catch (error) {
       throw {

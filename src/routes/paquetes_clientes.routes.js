@@ -150,10 +150,12 @@ router.delete("/:id", verificarToken, esAdmin, PaquetesClientesController.delete
 
 // Ruta para servir las imágenes
 router.get("/imagen/:filename", (req, res) => {
-  const { filename } = req.params;
+  // path.basename evita que se pidan archivos fuera de la carpeta de fotos
+  // (por ejemplo "../../.env")
+  const filename = path.basename(req.params.filename || "");
   const filePath = path.join(uploadsDir, filename);
 
-  if (fs.existsSync(filePath)) {
+  if (filename && filename === req.params.filename && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     res.sendFile(filePath);
   } else {
     res.status(404).json({

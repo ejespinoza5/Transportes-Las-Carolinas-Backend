@@ -173,8 +173,8 @@ export const PaquetesClientesModel = {
   },
 
   // Actualizar observaciones del paquete en paquetes_clientes por id_Paquete
-  actualizarObservacionesPorPaquete: async (id_Paquete, observaciones) => {
-    const [result] = await db.query(
+  actualizarObservacionesPorPaquete: async (id_Paquete, observaciones, conn = db) => {
+    const [result] = await conn.query(
       `UPDATE paquetes_clientes SET observaciones = ? WHERE id_Paquete = ? AND estado = 'activo'`,
       [observaciones, id_Paquete]
     );

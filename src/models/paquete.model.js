@@ -106,7 +106,7 @@ WHERE p.Guia = ?`,
   },
 
   // Crear un paquete
-  create: async (data) => {
+  create: async (data, conn = db) => {
     try {
       const sql = `
       INSERT INTO paquete 
@@ -129,7 +129,7 @@ WHERE p.Guia = ?`,
         data.Hora_registro,
       ];
 
-      const [result] = await db.query(sql, params);
+      const [result] = await conn.query(sql, params);
       return result.insertId;
 
     } catch (error) {
@@ -138,7 +138,7 @@ WHERE p.Guia = ?`,
   },
 
   // Actualizar un paquete (solo campos enviados)
-  update: async (id, data) => {
+  update: async (id, data, conn = db) => {
     // Construir dinámicamente la consulta solo con los campos que vienen
     const campos = [];
     const valores = [];
@@ -194,7 +194,7 @@ WHERE p.Guia = ?`,
 
     const sql = `UPDATE paquete SET ${campos.join(', ')} WHERE id_Paquete = ?`;
 
-    const [result] = await db.query(sql, valores);
+    const [result] = await conn.query(sql, valores);
     return result;
   },
 
@@ -207,13 +207,13 @@ WHERE p.Guia = ?`,
     return result;
   },
 
-   updateEstado: async (id, id_estado) => {
+   updateEstado: async (id, id_estado, conn = db) => {
     const sql = `
       UPDATE paquete
       SET id_estado = ?
       WHERE id_Paquete = ? AND estado = 'activo'
     `;
-    const [result] = await db.query(sql, [id_estado, id]);
+    const [result] = await conn.query(sql, [id_estado, id]);
     return result;
   },
 
