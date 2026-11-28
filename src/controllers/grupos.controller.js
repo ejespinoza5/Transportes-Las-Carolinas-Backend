@@ -1,4 +1,5 @@
 import { GrupoService } from "../services/grupos.service.js";
+import { datosUsuarioRequest } from "../models/auditoria_paquetes.model.js";
 export const GrupoController = {
     getAll: async (req, res) => {
         const grupos = await GrupoService.getAll();
@@ -47,7 +48,7 @@ export const GrupoController = {
     },
     desactivate: async (req, res) => {
         try {
-            const resultado = await GrupoService.desactivate(req.params.id);
+            const resultado = await GrupoService.desactivate(req.params.id, datosUsuarioRequest(req));
             res.json(resultado);
         } catch (error) {
             res.status(error.status || 500).json({

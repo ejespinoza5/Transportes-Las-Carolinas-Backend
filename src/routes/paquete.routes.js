@@ -36,6 +36,7 @@ const upload = multer({
 router.get("/", verificarToken, esAdmin, PaqueteController.getAll);
 router.get("/paginacion", verificarToken, esAdmin, PaqueteController.getAllPaginated); // Debe ir antes de /:id
 router.get("/guia/:guia", verificarToken, esAdmin, PaqueteController.getByGuia); // Debe ir antes de /:id
+router.get("/auditoria/eliminaciones", verificarToken, esAdmin, PaqueteController.getAuditoriaEliminaciones); // Debe ir antes de /:id
 router.get("/estado/guia/:guia",  PaqueteController.getByGuiaFull);
 router.get("/estado/guia/:guia/pdf",  PaqueteController.getByGuiaPDF); // Nueva ruta para generar PDF
 router.get("/:id", verificarToken, esAdmin, PaqueteController.getById);

@@ -1,6 +1,7 @@
 import { PaqueteModel } from "../models/paquete.model.js";
 import { HistorialEstadosModel } from "../models/historial_estados.model.js";
 import { PaquetesClientesModel } from "../models/paquetes_clientes.model.js";
+import { AuditoriaPaquetesModel } from "../models/auditoria_paquetes.model.js";
 import { db } from "../config/db.js";
 
 export const PaqueteService = {
@@ -335,12 +336,17 @@ getByGuiaFull: async (guia) => {
   return { paquete, historial };
 },
 
-  deactivate: (id) => {
-    return PaqueteModel.deactivate(id);
+  deactivate: async (id, usuario = {}) => {
+    const estabaActivo = await PaqueteModel.getById(id); // getById solo devuelve activos
+    const result = await PaqueteModel.deactivate(id);
+    if (estabaActivo && result.affectedRows > 0) {
+      await AuditoriaPaquetesModel.registrarPorIds([id], 'eliminar', usuario);
+    }
+    return result;
   },
 
   // Desactivar mÃºltiples paquetes
-  deactivateMultiple: async (ids) => {
+  deactivateMultiple: async (ids, usuario = {}) => {
     try {
       // ValidaciÃ³n bÃ¡sica
       if (!Array.isArray(ids) || ids.length === 0) {
@@ -352,6 +358,7 @@ getByGuiaFull: async (guia) => {
         errores: [],
         detalles: []
       };
+      const idsDesactivados = [];
 
       // Procesar cada paquete individualmente
       for (const id of ids) {
@@ -375,6 +382,7 @@ getByGuiaFull: async (guia) => {
 
           if (result.affectedRows > 0) {
             resultados.desactivados++;
+            idsDesactivados.push(id);
             resultados.detalles.push(`Paquete ${id} (${paquete.Guia}): desactivado`);
           }
 
@@ -382,6 +390,9 @@ getByGuiaFull: async (guia) => {
           resultados.errores.push(`Paquete ${id}: ${error.message}`);
         }
       }
+
+      // Registrar quién eliminó los paquetes
+      await AuditoriaPaquetesModel.registrarPorIds(idsDesactivados, 'eliminar_multiple', usuario);
 
       return {
         ok: true,

@@ -1,6 +1,7 @@
 import XLSX from "xlsx";
 import fs from "fs";
 import { PaqueteService } from "../services/paquete.service.js";
+import { AuditoriaPaquetesModel, datosUsuarioRequest } from "../models/auditoria_paquetes.model.js";
 import { generarPDFPaquete } from "../utils/pdfGenerator.js";
 
 export const PaqueteController = {
@@ -188,8 +189,22 @@ export const PaqueteController = {
   },
 
   deactivate: async (req, res) => {
-    await PaqueteService.deactivate(req.params.id);
-    res.json({ message: "Paquete marcado como inactivo" });
+    try {
+      await PaqueteService.deactivate(req.params.id, datosUsuarioRequest(req));
+      res.json({ message: "Paquete marcado como inactivo" });
+    } catch (error) {
+      res.status(error.status || 500).json({ ok: false, message: error.message });
+    }
+  },
+
+  // Ver registro de quién eliminó paquetes (filtros opcionales: ?guia=&id_grupo=&limit=)
+  getAuditoriaEliminaciones: async (req, res) => {
+    try {
+      const data = await AuditoriaPaquetesModel.listar(req.query);
+      res.json({ ok: true, data });
+    } catch (error) {
+      res.status(500).json({ ok: false, message: error.message });
+    }
   },
 
   deactivateMultiple: async (req, res) => {
@@ -204,7 +219,7 @@ export const PaqueteController = {
         });
       }
 
-      const respuesta = await PaqueteService.deactivateMultiple(ids);
+      const respuesta = await PaqueteService.deactivateMultiple(ids, datosUsuarioRequest(req));
 
       res.json(respuesta);
 

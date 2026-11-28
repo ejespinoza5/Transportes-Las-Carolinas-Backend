@@ -1,5 +1,6 @@
 import { GrupoModel } from "../models/grupos.model.js";
 import { db } from "../config/db.js";
+import { AuditoriaPaquetesModel } from "../models/auditoria_paquetes.model.js";
 
 export const GrupoService = {
     getAll: () => {
@@ -80,11 +81,14 @@ export const GrupoService = {
             };
         }
     },
-    desactivate: async (id) => {
+    desactivate: async (id, usuario = {}) => {
         try {
             // Primero desactivar el grupo
             await GrupoModel.desactivate(id);
-            
+
+            // Registrar quién eliminó los paquetes del grupo (antes de desactivarlos)
+            await AuditoriaPaquetesModel.registrarPorGrupo(id, 'eliminar_grupo', usuario);
+
             // Luego desactivar todos los paquetes que pertenecen a este grupo
             const sql = "UPDATE paquete SET estado = 'inactivo' WHERE id_grupo = ? AND estado = 'activo'";
             const [result] = await db.query(sql, [id]);
